@@ -1,15 +1,12 @@
 package com.videompv
 
-import android.content.Context
-import android.util.AttributeSet
-import android.view.View
+import android.view.SurfaceHolder
+import android.view.SurfaceView
+import com.facebook.react.uimanager.ThemedReactContext
 
-class VideoMpvView : View {
-  constructor(context: Context?) : super(context)
-  constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)
-  constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(
-    context,
-    attrs,
-    defStyleAttr
-  )
+class VideoMpvView(context: ThemedReactContext) : SurfaceView(context), SurfaceHolder.Callback {
+
+  companion object {
+    internal const val TAG = "VideoMpvView"
+  }
 }

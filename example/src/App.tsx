@@ -4,7 +4,12 @@ import { VideoMpvView } from 'react-native-video-mpv';
 export default function App() {
   return (
     <View style={styles.container}>
-      <VideoMpvView color="#32a852" style={styles.box} />
+      <VideoMpvView
+        src={{
+          uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        }}
+        style={styles.box}
+      />
     </View>
   );
 }
@@ -16,8 +21,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   box: {
-    width: 60,
-    height: 60,
-    marginVertical: 20,
+    width: '100%',
+    height: 300,
   },
 });

@@ -1,0 +1,177 @@
+package com.videompv
+
+import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.WritableArray
+import com.facebook.react.bridge.WritableMap
+import com.facebook.react.uimanager.ThemedReactContext
+import com.facebook.react.uimanager.UIManagerHelper
+import com.facebook.react.uimanager.events.Event
+import com.facebook.react.uimanager.events.EventDispatcher
+import com.videompv.api.BasicTrack
+import com.videompv.api.VideoBasicTrack
+
+enum class EventTypes(val eventName: String) {
+    EVENT_LOAD_START("onVideoLoadStart"),
+    EVENT_LOAD("onVideoLoad"),
+    EVENT_ERROR("onVideoError"),
+    EVENT_PROGRESS("onVideoProgress"),
+    EVENT_END("onVideoEnd"),
+    EVENT_BUFFER("onVideoBuffer"),
+    EVENT_PLAYBACK_STATE_CHANGED("onVideoPlaybackStateChanged");
+
+    companion object {
+        fun toMap() =
+                mutableMapOf<String, Any>().apply {
+                    EventTypes.values().toList().forEach { eventType ->
+                        put(
+                                "top${eventType.eventName.removePrefix("on")}",
+                                hashMapOf("registrationName" to eventType.eventName)
+                        )
+                    }
+                }
+    }
+}
+
+class VideoMpvEventEmitter {
+    lateinit var onVideoLoadStart: () -> Unit
+    lateinit var onVideoLoad:
+            (
+                    duration: Long,
+                    currentPosition: Long,
+                    videoWidth: Int,
+                    videoHeight: Int,
+                    audioTracks: ArrayList<BasicTrack>,
+                    textTracks: ArrayList<BasicTrack>,
+                    videoTracks: ArrayList<VideoBasicTrack>,
+            ) -> Unit
+    lateinit var onVideoError: (errorString: String, errorCode: Int) -> Unit
+    lateinit var onVideoProgress:
+            (currentPosition: Long, seekableDuration: Long, progress: Float) -> Unit
+    lateinit var onVideoPlaybackStateChanged: (isPlaying: Boolean, isSeeking: Boolean) -> Unit
+    lateinit var onVideoEnd: () -> Unit
+    lateinit var onVideoBuffer: (isBuffering: Boolean) -> Unit
+
+    fun addEventEmitters(reactContext: ThemedReactContext, view: VideoVLCView) {
+        val dispatcher = UIManagerHelper.getEventDispatcherForReactTag(reactContext, view.id)
+        val surfaceId = UIManagerHelper.getSurfaceId(reactContext)
+        if (dispatcher != null) {
+            val event = EventBuilder(surfaceId, view.id, dispatcher)
+
+            onVideoLoadStart = { event.dispatch(EventTypes.EVENT_LOAD_START) }
+            onVideoLoad =
+                    {
+                            duration,
+                            currentPosition,
+                            videoWidth,
+                            videoHeight,
+                            audioTracks,
+                            textTracks,
+                            videoTracks ->
+                        event.dispatch(EventTypes.EVENT_LOAD) {
+                            putDouble("duration", duration / 1000.0)
+                            putDouble("currentTime", currentPosition / 1000.0)
+
+                            val naturalSize: WritableMap =
+                                    aspectRatioToNaturalSize(videoWidth, videoHeight)
+                            putMap("naturalSize", naturalSize)
+                            putArray("videoTracks", videotracksToArray(videoTracks))
+                            putArray("audioTracks", basictracksToArray(audioTracks))
+                            putArray("textTracks", basictracksToArray(textTracks))
+                        }
+                    }
+
+            onVideoError = { errorString, errorCode ->
+                event.dispatch(EventTypes.EVENT_ERROR) {
+                    putMap(
+                            "error",
+                            Arguments.createMap().apply {
+                                putString("errorString", errorString)
+                                putInt("errorCode", errorCode)
+                            }
+                    )
+                }
+            }
+            onVideoProgress = { currentPosition, seekableDuration, progress ->
+                event.dispatch(EventTypes.EVENT_PROGRESS) {
+                    putDouble("currentTime", currentPosition / 1000.0)
+                    putDouble("seekableDuration", seekableDuration / 1000.0)
+                    putDouble("progress", progress.toDouble())
+                }
+            }
+            onVideoPlaybackStateChanged = { isPlaying, isSeeking ->
+                event.dispatch(EventTypes.EVENT_PLAYBACK_STATE_CHANGED) {
+                    putBoolean("isPlaying", isPlaying)
+                    putBoolean("isSeeking", isSeeking)
+                }
+            }
+            onVideoEnd = { event.dispatch(EventTypes.EVENT_END) }
+            onVideoBuffer = { isBuffering ->
+                event.dispatch(EventTypes.EVENT_BUFFER) { putBoolean("isBuffering", isBuffering) }
+            }
+        }
+    }
+
+    private class EventBuilder(
+            private val surfaceId: Int,
+            private val viewId: Int,
+            private val dispatcher: EventDispatcher
+    ) {
+        fun dispatch(event: EventTypes, paramsSetter: (WritableMap.() -> Unit)? = null) =
+                dispatcher.dispatchEvent(
+                        object : Event<Event<*>>(surfaceId, viewId) {
+                            override fun getEventName() = "top${event.eventName.removePrefix("on")}"
+                            override fun getEventData() =
+                                    Arguments.createMap().apply(paramsSetter ?: {})
+                        }
+                )
+    }
+
+    private fun WritableMap.applyTrackProperties(format: BasicTrack) {
+        putInt("id", format.id)
+        putBoolean("selected", format.selected)
+        format.title?.let { putString("title", it) }
+        format.language?.let { putString("language", it) }
+    }
+
+    private fun <T : BasicTrack> Collection<T>?.toWritableArray(
+            extraProperties: (WritableMap, T) -> Unit = { _, _ -> }
+    ): WritableArray =
+            Arguments.createArray().apply {
+                this@toWritableArray?.forEach { format ->
+                    pushMap(
+                            Arguments.createMap().apply {
+                                applyTrackProperties(format)
+                                extraProperties(this, format)
+                            }
+                    )
+                }
+            }
+
+    // Usage:
+    private fun basictracksToArray(tracks: ArrayList<BasicTrack>?) = tracks.toWritableArray()
+
+    private fun videotracksToArray(tracks: ArrayList<VideoBasicTrack>?) =
+            tracks.toWritableArray { map, format ->
+                map.putInt("width", format.width)
+                map.putInt("height", format.height)
+            }
+
+    private fun aspectRatioToNaturalSize(videoWidth: Int, videoHeight: Int): WritableMap =
+            Arguments.createMap().apply {
+                if (videoWidth > 0) {
+                    putInt("width", videoWidth)
+                }
+                if (videoHeight > 0) {
+                    putInt("height", videoHeight)
+                }
+
+                val orientation =
+                        when {
+                            videoWidth > videoHeight -> "landscape"
+                            videoWidth < videoHeight -> "portrait"
+                            else -> "square"
+                        }
+
+                putString("orientation", orientation)
+            }
+}
