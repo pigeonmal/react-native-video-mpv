@@ -7,8 +7,9 @@ import com.facebook.react.uimanager.ViewManager
 import java.util.ArrayList
 
 
-// thanks https://github.com/ZPlexLabs/zplex-android/ for /libs and /jni precompile
+// thanks https://github.com/jarnedemeulemeester/libmpv-android/releases/tag/v0.4.1 for precompile
 class VideoMpvViewPackage : ReactPackage {
+
   override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {
     val viewManagers: MutableList<ViewManager<*, *>> = ArrayList()
     viewManagers.add(VideoMpvViewManager())

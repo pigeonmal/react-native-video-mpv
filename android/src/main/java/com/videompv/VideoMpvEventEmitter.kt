@@ -36,8 +36,8 @@ class VideoMpvEventEmitter {
     lateinit var onVideoLoadStart: () -> Unit
     lateinit var onVideoLoad:
             (
-                    duration: Long,
-                    currentPosition: Long,
+                    duration: Double,
+                    currentPosition: Double,
                     videoWidth: Int,
                     videoHeight: Int,
                     audioTracks: ArrayList<BasicTrack>,
@@ -46,12 +46,12 @@ class VideoMpvEventEmitter {
             ) -> Unit
     lateinit var onVideoError: (errorString: String, errorCode: Int) -> Unit
     lateinit var onVideoProgress:
-            (currentPosition: Long, seekableDuration: Long, progress: Float) -> Unit
+            (currentPosition: Double, seekableDuration: Double, progress: Double) -> Unit
     lateinit var onVideoPlaybackStateChanged: (isPlaying: Boolean, isSeeking: Boolean) -> Unit
     lateinit var onVideoEnd: () -> Unit
     lateinit var onVideoBuffer: (isBuffering: Boolean) -> Unit
 
-    fun addEventEmitters(reactContext: ThemedReactContext, view: VideoVLCView) {
+    fun addEventEmitters(reactContext: ThemedReactContext, view: VideoMpvView) {
         val dispatcher = UIManagerHelper.getEventDispatcherForReactTag(reactContext, view.id)
         val surfaceId = UIManagerHelper.getSurfaceId(reactContext)
         if (dispatcher != null) {
@@ -68,8 +68,8 @@ class VideoMpvEventEmitter {
                             textTracks,
                             videoTracks ->
                         event.dispatch(EventTypes.EVENT_LOAD) {
-                            putDouble("duration", duration / 1000.0)
-                            putDouble("currentTime", currentPosition / 1000.0)
+                            putDouble("duration", duration)
+                            putDouble("currentTime", currentPosition)
 
                             val naturalSize: WritableMap =
                                     aspectRatioToNaturalSize(videoWidth, videoHeight)
@@ -93,9 +93,9 @@ class VideoMpvEventEmitter {
             }
             onVideoProgress = { currentPosition, seekableDuration, progress ->
                 event.dispatch(EventTypes.EVENT_PROGRESS) {
-                    putDouble("currentTime", currentPosition / 1000.0)
-                    putDouble("seekableDuration", seekableDuration / 1000.0)
-                    putDouble("progress", progress.toDouble())
+                    putDouble("currentTime", currentPosition)
+                    putDouble("seekableDuration", seekableDuration)
+                    putDouble("progress", progress)
                 }
             }
             onVideoPlaybackStateChanged = { isPlaying, isSeeking ->

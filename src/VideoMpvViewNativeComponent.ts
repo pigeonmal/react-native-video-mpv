@@ -97,8 +97,7 @@ export interface NativeProps extends ViewProps {
   paused?: boolean;
   muted?: boolean;
   volume?: Int32; // default 100
-  progressUpdateInterval?: Float; // default 250
-  textTrackDelay?: Int32; // delai en s i think
+  textTrackDelay?: Float; // delai en seconds i think
 
   onVideoLoad?: DirectEventHandler<OnLoadData>;
   onVideoLoadStart?: DirectEventHandler<{}>;

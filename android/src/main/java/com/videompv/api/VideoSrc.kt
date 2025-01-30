@@ -106,7 +106,7 @@ class VideoSrc {
                 }
                 videoSrc.uriString = uriString
                 videoSrc.uri = uri
-                videoSrc.startPosition = safeGetFloat(src, PROP_SRC_START_POSITION, -1f)
+                videoSrc.startPosition = safeGetFloat(src, PROP_SRC_START_POSITION, 0f)
                 videoSrc.minLoadRetryCount = safeGetInt(src, PROP_SRC_MIN_LOAD_RETRY_COUNT, 3)
 
                 val propSrcHeadersArray = safeGetArray(src, PROP_SRC_HEADERS)
