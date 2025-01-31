@@ -33,14 +33,11 @@ class VideoSrc {
     /** HTTP header list */
     val headers: MutableMap<String, String> = HashMap()
 
-    /** Media options for VLC */
-    var mediaOptions = ArrayList<String>()
-
     /** The list of sideLoaded text tracks */
     var sideLoadedTextTracks: SideLoadedTrackList? = null
 
     override fun hashCode(): Int =
-            Objects.hash(uriString, uri, startPosition, headers, mediaOptions)
+            Objects.hash(uriString, uri, startPosition, headers)
 
     /** Return true if this and src are equal */
     override fun equals(other: Any?): Boolean {
@@ -48,7 +45,6 @@ class VideoSrc {
         return (uri == other.uri &&
                 startPosition == other.startPosition &&
                 minLoadRetryCount == other.minLoadRetryCount &&
-                mediaOptions == other.mediaOptions &&
                 sideLoadedTextTracks == other.sideLoadedTextTracks)
     }
 
@@ -60,7 +56,6 @@ class VideoSrc {
         private const val PROP_SRC_URI = "uri"
         private const val PROP_SRC_START_POSITION = "startPosition"
         private const val PROP_SRC_HEADERS = "requestHeaders"
-        private const val PROP_SRC_MEDIA_OPTIONS = "mediaOptions"
         private const val PROP_SRC_TEXT_TRACKS = "textTracks"
         private const val PROP_SRC_MIN_LOAD_RETRY_COUNT = "minLoadRetryCount"
 
@@ -121,15 +116,6 @@ class VideoSrc {
                     }
                 }
 
-                val mediaOptionsArray = safeGetArray(src, PROP_SRC_MEDIA_OPTIONS)
-                if (mediaOptionsArray != null && mediaOptionsArray.size() > 0) {
-                    for (i in 0 until mediaOptionsArray.size()) {
-                        val mediaOpt: String? = mediaOptionsArray.getString(i)
-                        if (mediaOpt != null) {
-                            videoSrc.mediaOptions.add(mediaOpt)
-                        }
-                    }
-                }
 
                 videoSrc.sideLoadedTextTracks =
                         SideLoadedTrackList.parse(safeGetArray(src, PROP_SRC_TEXT_TRACKS))

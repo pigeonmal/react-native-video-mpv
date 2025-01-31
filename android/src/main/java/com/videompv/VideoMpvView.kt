@@ -32,8 +32,8 @@ class VideoMpvView(context: ThemedReactContext) :
   private var muted: Boolean = false
   private var volume = 100
   private var repeat: Boolean = true // Default true by mpv but false in my library
-  private var selectedTextTrack: Int = -1
-  private var selectedAudioTrack: Int = -1
+  private var selectedTextTrack: Int = 0 // -1: Disable 0: Auto >0: ID
+  private var selectedAudioTrack: Int = 0 // -1: Disable 0: Auto >0: ID
   // private var scaleType: String = ScaleType.SURFACE_BEST_FIT
   private var spuDelay: Double = 0.0
 
@@ -121,10 +121,11 @@ class VideoMpvView(context: ThemedReactContext) :
   }
 
   fun observeProperties() {
-    MPVLib.observeProperty("eof-reached", MPVFormat.MPV_FORMAT_NONE)
-    MPVLib.observeProperty("core-idle", MPVFormat.MPV_FORMAT_FLAG) // Like "pause"
-    MPVLib.observeProperty("pause", MPVFormat.MPV_FORMAT_FLAG)
+   // MPVLib.observeProperty("eof-reached", MPVFormat.MPV_FORMAT_NONE)
+  //  MPVLib.observeProperty("core-idle", MPVFormat.MPV_FORMAT_FLAG) // Like "pause"
+  //  MPVLib.observeProperty("pause", MPVFormat.MPV_FORMAT_FLAG)
     MPVLib.observeProperty("time-pos", MPVFormat.MPV_FORMAT_INT64)
+
   }
 
   /* Events */
@@ -146,6 +147,8 @@ class VideoMpvView(context: ThemedReactContext) :
   override fun event(eventId: Int) {
     when (eventId) {
       MPVEventId.MPV_EVENT_FILE_LOADED -> onVideoLoaded()
+      MPVEventId.MPV_EVENT_START_FILE -> eventEmitter.onVideoLoadStart()
+      MPVEventId.MPV_EVENT_END_FILE -> onVideoEnd()
     }
   }
 
@@ -161,6 +164,22 @@ class VideoMpvView(context: ThemedReactContext) :
 
   private fun onVideoLoaded() {
     Log.d(TAG, "Video loaded !")
+
+    val sideloadTracks = src.sideLoadedTextTracks
+
+    if (sideloadTracks != null) {
+      for (externText in sideloadTracks.tracks) {
+        MPVLib.command(
+                arrayOf(
+                        "sub-add",
+                        externText.uri,
+                        "auto",
+                        externText.title ?: "external",
+                        externText.language ?: "auto"
+                )
+        )
+      }
+    }
 
     val textTracks = ArrayList<BasicTrack>()
     val audioTracks = ArrayList<BasicTrack>()
@@ -179,13 +198,38 @@ class VideoMpvView(context: ThemedReactContext) :
       val mpvId = MPVLib.getPropertyInt("track-list/$i/id") ?: continue
       val lang = MPVLib.getPropertyString("track-list/$i/lang")
       val title = MPVLib.getPropertyString("track-list/$i/title")
+      val selected = MPVLib.getPropertyString("track-list/$i/selected") == "yes"
 
-      Log.d(TAG, "TRACK $type : $mpvId $lang $title !")
+      if (isAudioTrack) {
+        audioTracks.add(BasicTrack(title, lang, mpvId, selected))
+      } else if (isSubTrack) {
+        textTracks.add(BasicTrack(title, lang, mpvId, selected))
+      } else if (isVideoTrack) {
+        videosTracks.add(
+                VideoBasicTrack(
+                        title,
+                        lang,
+                        mpvId,
+                        selected,
+                        MPVLib.getPropertyInt("track-list/$i/demux-w"), // Width
+                        MPVLib.getPropertyInt("track-list/$i/demux-h") // Height
+                )
+        )
+      }
     }
 
-    val videoWidth = MPVLib.getPropertyInt("width")
-    val videoHeight = MPVLib.getPropertyInt("height")
-    Log.d(TAG, "W: $videoWidth $videoHeight !")
+    eventEmitter.onVideoLoad(
+            MPVLib.getPropertyDouble("duration") ?: 0.0,
+            MPVLib.getPropertyDouble("time-pos") ?: 0.0,
+            MPVLib.getPropertyInt("width") ?: 0,
+            MPVLib.getPropertyInt("height") ?: 0,
+            audioTracks,
+            textTracks,
+            videosTracks
+    )
+  }
+
+  private fun onVideoEnd() {
   }
 
   // Player commands
@@ -225,18 +269,22 @@ class VideoMpvView(context: ThemedReactContext) :
   fun setTextIdTrack(trackId: Int) {
     if (trackId != selectedTextTrack) {
       selectedTextTrack = trackId
-      if (trackId == -1) {
-        // Disable text track, default value
-        MPVLib.setPropertyString("sid", "no")
-      } else {
-        MPVLib.setPropertyInt("sid", trackId)
-      }
+      setTrackID("sid", trackId)
+    }
+  }
+
+  private fun setTrackID(propName: String, trackId: Int) {
+    if (trackId > 0) {
+      MPVLib.setPropertyInt(propName, trackId)
+    } else {
+      MPVLib.setPropertyString(propName, if (trackId == 0) "auto" else "no")
     }
   }
 
   fun setAudioIdTrack(trackId: Int) {
     if (trackId != selectedAudioTrack) {
       selectedAudioTrack = trackId
+      setTrackID("aid", trackId)
     }
   }
   fun setResizeMode(mode: String?) {}
@@ -266,25 +314,11 @@ class VideoMpvView(context: ThemedReactContext) :
               if (source.startPosition >= 0) source.startPosition.toString() else ""
       )
 
-      MPVLib.command(arrayOf("loadfile", source.uri.toString()))
-
-      val sideloadTracks = source.sideLoadedTextTracks
-
-      if (sideloadTracks != null) {
-        for (externText in sideloadTracks.tracks) {
-          MPVLib.command(
-                  arrayOf(
-                          "sub-add",
-                          externText.uri,
-                          "auto",
-                          externText.title ?: "",
-                          externText.language ?: ""
-                  )
-          )
-        }
+      if (MPVLib.getPropertyString("force-window") == "yes") {
+        MPVLib.command(arrayOf("loadfile", source.uri.toString()))
+      } else {
+        filePath = source.uri.toString()
       }
-
-      eventEmitter.onVideoLoadStart()
     } else {
       unloadMedia()
     }
@@ -298,6 +332,7 @@ class VideoMpvView(context: ThemedReactContext) :
   }
 
   private fun cleanVariables() {
+    filePath = null
     src = VideoSrc()
   }
 

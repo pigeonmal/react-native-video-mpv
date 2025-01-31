@@ -27,7 +27,6 @@ export type VideoSrc = Readonly<{
   startPosition?: Float;
   textTracks?: SideloadTracks;
   minLoadRetryCount?: Int32; // Android
-  mediaOptions?: string[]; // media vlc options
 }>;
 
 export type OnLoadData = Readonly<{

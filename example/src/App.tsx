@@ -24,7 +24,7 @@ const testSource: VideoSrc = {
       title: 'TEST 2',
     },
     {
-      // Will not work same url
+      // Will work
       uri: 'https://subs5.strem.io/en/download/subencoding-stremio-utf8/src-api/file/1958334424',
       language: 'h3',
       title: 'TEST3',
@@ -40,7 +40,8 @@ const testSource: VideoSrc = {
 };
 
 const testSource2: VideoSrc = {
-  uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+  startPosition: 100,
+  uri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
 };
 
 export default function App() {
@@ -54,8 +55,7 @@ export default function App() {
         style={styles.box}
         repeat
         resizeMode="none"
-        textTrackDelay={10}
-        selectedTextTrack={10}
+        selectedTextTrack={9}
         paused={paused}
         onVideoBuffer={() => console.log('onVideoBuffer')}
         onVideoEnd={() => console.log('onVideoEnd')}

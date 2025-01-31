@@ -1,6 +1,5 @@
 package com.videompv
 
-import android.util.Log
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.module.annotations.ReactModule
@@ -60,12 +59,12 @@ class VideoMpvViewManager :
     videoView.setResizeMode(resizeMode)
   }
 
-  @ReactProp(name = PROP_SELECTED_TEXT_TRACK, defaultInt = -1)
+  @ReactProp(name = PROP_SELECTED_TEXT_TRACK, defaultInt = 0)
   override fun setSelectedTextTrack(videoView: VideoMpvView, selectedTextTrack: Int) {
     videoView.setTextIdTrack(selectedTextTrack)
   }
 
-  @ReactProp(name = PROP_SELECTED_AUDIO_TRACK, defaultInt = -1)
+  @ReactProp(name = PROP_SELECTED_AUDIO_TRACK, defaultInt = 0)
   override fun setSelectedAudioTrack(videoView: VideoMpvView, selectedAudioTrack: Int) {
     videoView.setAudioIdTrack(selectedAudioTrack)
   }
