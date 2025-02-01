@@ -4,7 +4,7 @@ import type { VideoSrc } from '../../src/VideoMpvViewNativeComponent';
 import { VideoMpvView } from 'react-native-video-mpv';
 
 const testSource: VideoSrc = {
-  startPosition: 10,
+  startPosition: 30,
   textTracks: [
     {
       // Will work
@@ -53,9 +53,7 @@ export default function App() {
       <VideoMpvView
         src={source}
         style={styles.box}
-        repeat
-        resizeMode="none"
-        selectedTextTrack={9}
+        selectedTextTrack={4}
         paused={paused}
         onVideoBuffer={() => console.log('onVideoBuffer')}
         onVideoEnd={() => console.log('onVideoEnd')}
@@ -118,7 +116,6 @@ const styles = StyleSheet.create({
   },
   box: {
     width: '100%',
-    backgroundColor: 'red',
     height: 300,
   },
   button: {

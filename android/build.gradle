@@ -40,7 +40,6 @@ android {
         minSdkVersion getExtOrIntegerDefault("minSdkVersion")
         targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
         buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
-        
         ndk {
             abiFilters(*reactNativeArchitectures())
         }
@@ -53,6 +52,26 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+        }
+    }
+
+    externalNativeBuild {
+        ndkBuild {
+            path "$projectDir/src/main/jni/Android.mk"
+        }
+    }
+
+    splits {
+        abi {
+            enable true
+            reset()
+            universalApk false  // If true, also generate a universal APK
+            include (*reactNativeArchitectures())
+            reactNativeArchitectures().each { abi -> 
+                    if (new File(project.projectDir, "$projectDir/../buildscripts/prefix/${abi}").exists()) {
+                        include(abi)
+                    }
+                }
         }
     }
 
@@ -71,6 +90,8 @@ android {
             }
         }
     }
+
+   
 }
 
 repositories {
@@ -83,7 +104,6 @@ def kotlin_version = getExtOrDefault("kotlinVersion")
 dependencies {
     implementation "com.facebook.react:react-android"
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compileOnly files('../libmpv/libmpv-release.aar')
 }
 
 if (isNewArchitectureEnabled()) {

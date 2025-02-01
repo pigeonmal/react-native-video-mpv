@@ -1,5 +1,6 @@
 package com.videompv
 
+import android.content.res.AssetManager
 import android.os.Build
 import android.util.Log
 import android.view.SurfaceHolder
@@ -12,7 +13,8 @@ import com.videompv.MPVUtil.MPVFormat
 import com.videompv.api.BasicTrack
 import com.videompv.api.VideoBasicTrack
 import com.videompv.api.VideoSrc
-import dev.jdtech.mpv.MPVLib
+import java.io.File
+import java.io.FileOutputStream
 import java.util.Locale
 
 class VideoMpvView(context: ThemedReactContext) :
@@ -20,8 +22,11 @@ class VideoMpvView(context: ThemedReactContext) :
 
   /* SYSTEM */
   internal final val eventEmitter = VideoMpvEventEmitter()
+  private val mThemedReactContext: ThemedReactContext = context
   private var activityIsForeground = true
   private var playerDestoryed = false
+  private var isInHostPause = false
+  private var playerParsed = false
   private var filePath: String? = null
   private var hwdec: String = "auto" // https://mpv.io/manual/stable/#options-hwdec
   private var voInUse: String = "gpu" // https://mpv.io/manual/stable/#video-output-drivers-vo
@@ -31,14 +36,30 @@ class VideoMpvView(context: ThemedReactContext) :
   private var paused: Boolean = false
   private var muted: Boolean = false
   private var volume = 100
-  private var repeat: Boolean = true // Default true by mpv but false in my library
+  private var repeat: Boolean = false // Default true by mpv but false in my library
   private var selectedTextTrack: Int = 0 // -1: Disable 0: Auto >0: ID
   private var selectedAudioTrack: Int = 0 // -1: Disable 0: Auto >0: ID
   // private var scaleType: String = ScaleType.SURFACE_BEST_FIT
   private var spuDelay: Double = 0.0
 
   init {
+    mThemedReactContext.addLifecycleEventListener(this)
+    val appContext = context.applicationContext
+    val mpvDir = File(appContext.getExternalFilesDir(null) ?: appContext.filesDir, "mpv")
+
+    Log.d(TAG, "mpv config dir: $mpvDir")
+
+    if (!mpvDir.exists()) mpvDir.mkdirs()
+
+    arrayOf("subfont.ttf").forEach { fileName ->
+      val file = File(mpvDir, fileName)
+      if (file.exists()) return@forEach
+      appContext.assets.open(fileName, AssetManager.ACCESS_STREAMING).copyTo(FileOutputStream(file))
+    }
+
     MPVLib.create(context)
+    MPVLib.setOptionString("config", "yes")
+    MPVLib.setOptionString("config-dir", mpvDir.path)
     initOptions()
 
     MPVLib.init()
@@ -80,6 +101,11 @@ class VideoMpvView(context: ThemedReactContext) :
     MPVLib.setOptionString("alang", deviceLanguage)
     MPVLib.setOptionString("slang", deviceLanguage)
 
+    MPVLib.setOptionString("tls-verify", "no")
+    MPVLib.setOptionString("sub-font-provider", "none")
+    MPVLib.setOptionString("keep-open", "always")
+    MPVLib.setOptionString("sub-scale-with-window", "yes")
+
     // MPVLib.setOptionString("deband", "yes")
     MPVLib.setOptionString("video-sync", "audio")
     MPVLib.setOptionString("gpu-context", "android")
@@ -102,6 +128,7 @@ class VideoMpvView(context: ThemedReactContext) :
   }
 
   fun postInitOptions() {
+    MPVLib.setPropertyString("loop-playlist", "no")
     MPVLib.setOptionString("save-position-on-quit", "no")
   }
 
@@ -111,7 +138,9 @@ class VideoMpvView(context: ThemedReactContext) :
    * Call this once before the view is destroyed.
    */
   fun destroy() {
+    cleanVariables()
     playerDestoryed = true
+    mThemedReactContext.removeLifecycleEventListener(this)
     MPVLib.removeObserver(this)
 
     // Disable surface callbacks to avoid using unintialized mpv state
@@ -121,11 +150,10 @@ class VideoMpvView(context: ThemedReactContext) :
   }
 
   fun observeProperties() {
-   // MPVLib.observeProperty("eof-reached", MPVFormat.MPV_FORMAT_NONE)
-  //  MPVLib.observeProperty("core-idle", MPVFormat.MPV_FORMAT_FLAG) // Like "pause"
-  //  MPVLib.observeProperty("pause", MPVFormat.MPV_FORMAT_FLAG)
+    // MPVLib.observeProperty("eof-reached", MPVFormat.MPV_FORMAT_NONE)
+    //  MPVLib.observeProperty("core-idle", MPVFormat.MPV_FORMAT_FLAG) // Like "pause"
+    //  MPVLib.observeProperty("pause", MPVFormat.MPV_FORMAT_FLAG)
     MPVLib.observeProperty("time-pos", MPVFormat.MPV_FORMAT_INT64)
-
   }
 
   /* Events */
@@ -153,17 +181,18 @@ class VideoMpvView(context: ThemedReactContext) :
   }
 
   fun updatePlaybackPos(pos: Long) {
-    if (playerDestoryed) return
+    if (playerDestoryed || !playerParsed) return
     Log.d(TAG, "PROGRESS $pos")
     eventEmitter.onVideoProgress(
             pos.toDouble(),
-            MPVLib.getPropertyDouble("duration"),
-            MPVLib.getPropertyDouble("percent-pos") / 100.0
+            (MPVLib.getPropertyDouble("duration") ?: 0.0),
+            (MPVLib.getPropertyDouble("percent-pos") ?: 0.0) / 100.0
     )
   }
 
   private fun onVideoLoaded() {
     Log.d(TAG, "Video loaded !")
+    playerParsed = true
 
     val sideloadTracks = src.sideLoadedTextTracks
 
@@ -174,19 +203,22 @@ class VideoMpvView(context: ThemedReactContext) :
                         "sub-add",
                         externText.uri,
                         "auto",
-                        externText.title ?: "external",
-                        externText.language ?: "auto"
+                        externText.title ?: "",
+                        externText.language ?: ""
                 )
         )
       }
     }
+
+    setTrackID("sid", selectedTextTrack)
+    setTrackID("aid", selectedAudioTrack)
 
     val textTracks = ArrayList<BasicTrack>()
     val audioTracks = ArrayList<BasicTrack>()
     val videosTracks = ArrayList<VideoBasicTrack>()
 
     val count = MPVLib.getPropertyInt("track-list/count")!!
-
+    Log.d(TAG, "COUNT $count")
     for (i in 0 until count) {
       val type = MPVLib.getPropertyString("track-list/$i/type") ?: continue
       val isAudioTrack = type == "audio"
@@ -196,8 +228,8 @@ class VideoMpvView(context: ThemedReactContext) :
         continue
       }
       val mpvId = MPVLib.getPropertyInt("track-list/$i/id") ?: continue
-      val lang = MPVLib.getPropertyString("track-list/$i/lang")
-      val title = MPVLib.getPropertyString("track-list/$i/title")
+      val lang: String? = MPVLib.getPropertyString("track-list/$i/lang")
+      val title: String? = MPVLib.getPropertyString("track-list/$i/title")
       val selected = MPVLib.getPropertyString("track-list/$i/selected") == "yes"
 
       if (isAudioTrack) {
@@ -230,18 +262,20 @@ class VideoMpvView(context: ThemedReactContext) :
   }
 
   private fun onVideoEnd() {
+    Log.d(TAG, "Video End")
+    cleanVariables()
   }
 
   // Player commands
 
   fun seek(time: Double) {
+    if (playerDestoryed || !playerParsed) return
     MPVLib.setPropertyDouble("time-pos", time)
   }
 
   fun setRepeatModifier(repeatparam: Boolean) {
     if (repeatparam != repeat) {
       repeat = repeatparam
-      MPVLib.setPropertyString("loop-playlist", if (repeatparam) "inf" else "no")
       MPVLib.setPropertyString("loop-file", if (repeatparam) "inf" else "no")
     }
   }
@@ -269,7 +303,7 @@ class VideoMpvView(context: ThemedReactContext) :
   fun setTextIdTrack(trackId: Int) {
     if (trackId != selectedTextTrack) {
       selectedTextTrack = trackId
-      setTrackID("sid", trackId)
+      if (playerParsed) setTrackID("sid", trackId)
     }
   }
 
@@ -284,7 +318,7 @@ class VideoMpvView(context: ThemedReactContext) :
   fun setAudioIdTrack(trackId: Int) {
     if (trackId != selectedAudioTrack) {
       selectedAudioTrack = trackId
-      setTrackID("aid", trackId)
+      if (playerParsed) setTrackID("aid", trackId)
     }
   }
   fun setResizeMode(mode: String?) {}
@@ -333,6 +367,7 @@ class VideoMpvView(context: ThemedReactContext) :
 
   private fun cleanVariables() {
     filePath = null
+    playerParsed = false
     src = VideoSrc()
   }
 
@@ -356,16 +391,20 @@ class VideoMpvView(context: ThemedReactContext) :
 
   override fun onHostPause() {
     activityIsForeground = false
-    if (!playerDestoryed) {
-      setPausedModifier(true)
+    if (!playerDestoryed && !paused) {
+      paused = true
+      isInHostPause = true
+      MPVLib.setPropertyBoolean("pause", true)
     }
   }
 
   override fun onHostResume() {
-    if (activityIsForeground) {
-      return
-    }
     activityIsForeground = true
+    if (isInHostPause) {
+      isInHostPause = false
+      paused = false
+      MPVLib.setPropertyBoolean("pause", false)
+    }
   }
 
   // Surface callbacks
