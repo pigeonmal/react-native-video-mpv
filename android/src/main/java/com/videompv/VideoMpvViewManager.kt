@@ -60,7 +60,7 @@ class VideoMpvViewManager :
 
   @ReactProp(name = PROP_ZOOM_MODE)
   override fun setZoomMode(videoView: VideoMpvView, zoomMode: Boolean) {
-    videoView.setResizeMode(resizeMode)
+    videoView.setZoomMode(zoomMode)
   }
 
   @ReactProp(name = PROP_PAUSED, defaultBoolean = false)
