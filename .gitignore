@@ -55,7 +55,6 @@ npm-debug.log
 yarn-debug.log
 yarn-error.log
 
-buildscripts/
 
 # BUCK
 buck-out/
