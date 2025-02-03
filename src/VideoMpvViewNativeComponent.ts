@@ -91,10 +91,11 @@ export type OnPlaybackStateChangedData = Readonly<{
 }>;
 
 type SubtitleStyle = Readonly<{
-  fontSize?: WithDefault<Int32, 55>; // Default 55
-  color?: WithDefault<string, '1.0/1.0/1.0'>; // Default white
-  bold?: WithDefault<boolean, false>; // Default false
-  backgroundColor?: WithDefault<string, '0.0/0.0/0.0/0.0'>; // Default to transparent black
+  fontSize?: Int32; // Default 55
+  color?: string; // Default white
+  bold?: boolean; // Default false
+  backgroundColor?: string; // Default to transparent black
+  borderStyle?: string; // Default to outline-and-shadow <outline-and-shadow|opaque-box|background-box>
 }>;
 
 export interface NativeProps extends ViewProps {
@@ -103,7 +104,7 @@ export interface NativeProps extends ViewProps {
   resizeMode?: string;
   paused?: boolean;
   muted?: boolean;
-  volume?: Int32; // default 100
+  volume?: WithDefault<Int32, 100>; // default 100
   textTrackDelay?: Float; // delai en seconds i think
   langsPref?: LangsPref;
   subStyle?: SubtitleStyle;

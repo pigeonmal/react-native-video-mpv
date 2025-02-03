@@ -38,7 +38,7 @@ class VideoMpvView(context: ThemedReactContext) :
   private var paused: Boolean = false
   private var muted: Boolean = false
   private var volume = 100
-  private var repeat: Boolean = false // Default true by mpv but false in my library
+  private var repeat: Boolean = false
   private var langsPref: LangsPref = LangsPref("", "", true)
   private var subStyle: SubtitleStyle = SubtitleStyle()
   // private var scaleType: String = ScaleType.SURFACE_BEST_FIT
@@ -49,18 +49,13 @@ class VideoMpvView(context: ThemedReactContext) :
     val mpvDir = File(appContext.getExternalFilesDir(null) ?: appContext.filesDir, "mpv")
     Log.d(TAG, "mpv config dir: $mpvDir")
 
-    try {
-      if (!mpvDir.exists()) mpvDir.mkdirs()
+    if (!mpvDir.exists()) mpvDir.mkdirs()
 
-      arrayOf("subfont.ttf").forEach { fileName ->
-        val file = File(mpvDir, fileName)
-        if (file.exists()) return@forEach
-        appContext
-                .assets
-                .open(fileName, AssetManager.ACCESS_STREAMING)
-                .copyTo(FileOutputStream(file))
-      }
-    } catch (e: Exception) {}
+    arrayOf("subfont.ttf").forEach { fileName ->
+      val file = File(mpvDir, fileName)
+      if (file.exists()) return@forEach
+      appContext.assets.open(fileName, AssetManager.ACCESS_STREAMING).copyTo(FileOutputStream(file))
+    }
     mThemedReactContext.addLifecycleEventListener(this)
 
     MPVLib.create(context)
@@ -217,7 +212,7 @@ class VideoMpvView(context: ThemedReactContext) :
   }
 
   private fun onVideoPaused(value: Boolean) {
-    setKeepScreenOn(!value)
+    //   setKeepScreenOn(!value)
   }
 
   private fun onVideoCoreIdle(value: Boolean) {
@@ -364,6 +359,7 @@ class VideoMpvView(context: ThemedReactContext) :
       MPVLib.setPropertyString("sub-color", newStyle.color)
       MPVLib.setPropertyString("sub-bold", if (newStyle.bold) "yes" else "no")
       MPVLib.setPropertyString("sub-back-color", newStyle.backgroundColor)
+      MPVLib.setPropertyString("sub-border-style", newStyle.borderStyle)
     }
   }
 
@@ -456,6 +452,18 @@ class VideoMpvView(context: ThemedReactContext) :
   }
 
   override fun onHostResume() {
+    /**
+     * Resume the player when the host is resumed.
+     *
+     * We only really care about resuming the player when the host is resumed if the player was
+     * previously paused because the host was paused. This is because the `onHostPause` callback
+     * will pause the player if the host is paused. If the host is paused, the player is paused. If
+     * the host is resumed, the player should be resumed.
+     *
+     * @see onHostPause
+     */
+    /** *********** ✨ Codeium Command ⭐ */
+    /** **** 2c95bbf5-e5f9-46de-bd75-328a915f0b99 */
     activityIsForeground = true
     if (isInHostPause) {
       isInHostPause = false
