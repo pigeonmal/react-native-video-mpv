@@ -1,8 +1,9 @@
 package com.videompv.api
 
 open class BasicTrack(
-        var title: String? = null,
-        var language: String? = null,
+        var title: String?,
+        var language: String?,
         val id: Int,
-        val selected: Boolean = false
+        val selected: Boolean,
+        val external: Boolean
 )

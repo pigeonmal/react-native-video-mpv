@@ -266,7 +266,6 @@ class VideoMpvView(context: ThemedReactContext) :
     val videosTracks = ArrayList<VideoBasicTrack>()
 
     val count = MPVLib.getPropertyInt("track-list/count")!!
-    Log.d(TAG, "COUNT $count")
     for (i in 0 until count) {
       val type = MPVLib.getPropertyString("track-list/$i/type") ?: continue
       val isAudioTrack = type == "audio"
@@ -275,16 +274,17 @@ class VideoMpvView(context: ThemedReactContext) :
       if (!isAudioTrack && !isSubTrack && !isVideoTrack) {
         continue
       }
+
       val mpvId = MPVLib.getPropertyInt("track-list/$i/id") ?: continue
       val lang: String? = MPVLib.getPropertyString("track-list/$i/lang")
       val title: String? = MPVLib.getPropertyString("track-list/$i/title")
       val selected = MPVLib.getPropertyString("track-list/$i/selected") == "yes"
+      val externaled = MPVLib.getPropertyString("track-list/$i/external") == "yes"
 
-      Log.d(TAG, "$type $mpvId $lang $title $selected")
       if (isAudioTrack) {
-        audioTracks.add(BasicTrack(title, lang, mpvId, selected))
+        audioTracks.add(BasicTrack(title, lang, mpvId, selected, externaled))
       } else if (isSubTrack) {
-        textTracks.add(BasicTrack(title, lang, mpvId, selected))
+        textTracks.add(BasicTrack(title, lang, mpvId, selected, externaled))
       } else if (isVideoTrack) {
         videosTracks.add(
                 VideoBasicTrack(
@@ -292,8 +292,9 @@ class VideoMpvView(context: ThemedReactContext) :
                         lang,
                         mpvId,
                         selected,
-                        MPVLib.getPropertyInt("track-list/$i/demux-w"), // Width
-                        MPVLib.getPropertyInt("track-list/$i/demux-h") // Height
+                        externaled,
+                        MPVLib.getPropertyInt("track-list/$i/demux-w") ?: 0, // Width
+                        MPVLib.getPropertyInt("track-list/$i/demux-h") ?: 0 // Height
                 )
         )
       }
@@ -304,9 +305,9 @@ class VideoMpvView(context: ThemedReactContext) :
             MPVLib.getPropertyDouble("time-pos") ?: 0.0,
             MPVLib.getPropertyInt("width") ?: 0,
             MPVLib.getPropertyInt("height") ?: 0,
-            audioTracks,
-            textTracks,
-            videosTracks
+            audioTracks.sortedBy { it.external },
+            textTracks.sortedBy { it.external },
+            videosTracks.sortedBy { it.external }
     )
   }
 

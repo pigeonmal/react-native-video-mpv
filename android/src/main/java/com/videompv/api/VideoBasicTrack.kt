@@ -1,10 +1,11 @@
 package com.videompv.api
 
 class VideoBasicTrack(
-        title: String? = null,
-        language: String? = null,
+        title: String?,
+        language: String?,
         id: Int,
-        selected: Boolean = false,
-        val width: Int = 0,
-        val height: Int = 0,
-) : BasicTrack(title, language, id, selected)
+        selected: Boolean,
+        external: Boolean,
+        val width: Int,
+        val height: Int,
+) : BasicTrack(title, language, id, selected, external)

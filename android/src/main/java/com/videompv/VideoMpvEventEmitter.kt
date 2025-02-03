@@ -41,9 +41,9 @@ class VideoMpvEventEmitter {
                     currentPosition: Double,
                     videoWidth: Int,
                     videoHeight: Int,
-                    audioTracks: ArrayList<BasicTrack>,
-                    textTracks: ArrayList<BasicTrack>,
-                    videoTracks: ArrayList<VideoBasicTrack>,
+                    audioTracks: List<BasicTrack>,
+                    textTracks: List<BasicTrack>,
+                    videoTracks: List<VideoBasicTrack>,
             ) -> Unit
     lateinit var onVideoError: (errorString: String, errorCode: Int) -> Unit
     lateinit var onVideoProgress:
@@ -154,9 +154,9 @@ class VideoMpvEventEmitter {
             }
 
     // Usage:
-    private fun basictracksToArray(tracks: ArrayList<BasicTrack>?) = tracks.toWritableArray()
+    private fun basictracksToArray(tracks: List<BasicTrack>?) = tracks.toWritableArray()
 
-    private fun videotracksToArray(tracks: ArrayList<VideoBasicTrack>?) =
+    private fun videotracksToArray(tracks: List<VideoBasicTrack>?) =
             tracks.toWritableArray { map, format ->
                 map.putInt("width", format.width)
                 map.putInt("height", format.height)
