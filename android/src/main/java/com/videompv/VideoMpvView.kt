@@ -44,7 +44,7 @@ class VideoMpvView(context: ThemedReactContext) :
   private var repeat: Boolean = false
   private var langsPref: LangsPref = LangsPref("", "", true)
   private var subStyle: SubtitleStyle = SubtitleStyle()
-  // private var scaleType: String = ScaleType.SURFACE_BEST_FIT
+  private var zoomMode: Boolean = false
   private var spuDelay: Double = 0.0
 
   init {
@@ -378,8 +378,6 @@ class VideoMpvView(context: ThemedReactContext) :
     MPVLib.setPropertyInt(key, value)
   }
 
-  fun setResizeMode(mode: String?) {}
-
   fun setSource(source: VideoSrc) {
     if (source == src) {
       return
@@ -396,6 +394,8 @@ class VideoMpvView(context: ThemedReactContext) :
                         .joinToString(",")
         // Set all headers at once using the correct MPV format
         MPVLib.setOptionString("http-header-fields", httpHeaderString)
+      } else {
+        MPVLib.setOptionString("http-header-fields", "")
       }
 
       MPVLib.setOptionString("sid", "auto")
@@ -421,6 +421,14 @@ class VideoMpvView(context: ThemedReactContext) :
     if (pause != paused) {
       paused = pause
       MPVLib.setPropertyBoolean("pause", paused)
+    }
+  }
+
+  fun setZoomMode(zoom: Boolean) {
+    if (zoom != zoomMode) {
+      zoomMode = zoom
+      MPVLib.setPropertyDouble("panscan", if (zoom) 1.0 else 0.0)
+      // MPVLib.setPropertyString("video-aspect-override", "-1")
     }
   }
 
@@ -498,4 +506,3 @@ class VideoMpvView(context: ThemedReactContext) :
     internal const val TAG = "VideoMpvView"
   }
 }
-

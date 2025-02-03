@@ -101,7 +101,7 @@ type SubtitleStyle = Readonly<{
 export interface NativeProps extends ViewProps {
   src?: VideoSrc;
   repeat?: boolean;
-  resizeMode?: string;
+  zoomMode?: boolean;
   paused?: boolean;
   muted?: boolean;
   volume?: WithDefault<Int32, 100>; // default 100

@@ -58,8 +58,8 @@ class VideoMpvViewManager :
     videoView.setRepeatModifier(repeat)
   }
 
-  @ReactProp(name = PROP_RESIZE_MODE)
-  override fun setResizeMode(videoView: VideoMpvView, resizeMode: String?) {
+  @ReactProp(name = PROP_ZOOM_MODE)
+  override fun setZoomMode(videoView: VideoMpvView, zoomMode: Boolean) {
     videoView.setResizeMode(resizeMode)
   }
 
@@ -124,7 +124,7 @@ class VideoMpvViewManager :
 
     private const val PROP_SRC = "src"
     private const val PROP_REPEAT = "repeat"
-    private const val PROP_RESIZE_MODE = "resizeMode"
+    private const val PROP_ZOOM_MODE = "zoomMode"
     private const val PROP_PAUSED = "paused"
     private const val PROP_MUTED = "muted"
     private const val PROP_VOLUME = "volume"
