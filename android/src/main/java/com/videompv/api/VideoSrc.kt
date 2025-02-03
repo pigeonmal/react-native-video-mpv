@@ -36,8 +36,9 @@ class VideoSrc {
     /** The list of sideLoaded text tracks */
     var sideLoadedTextTracks: SideLoadedTrackList? = null
 
-    override fun hashCode(): Int =
-            Objects.hash(uriString, uri, startPosition, headers)
+    val uniqueID: Long = System.currentTimeMillis()
+
+    override fun hashCode(): Int = Objects.hash(uriString, uri, startPosition, headers)
 
     /** Return true if this and src are equal */
     override fun equals(other: Any?): Boolean {
@@ -115,7 +116,6 @@ class VideoSrc {
                         }
                     }
                 }
-
 
                 videoSrc.sideLoadedTextTracks =
                         SideLoadedTrackList.parse(safeGetArray(src, PROP_SRC_TEXT_TRACKS))

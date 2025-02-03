@@ -46,8 +46,17 @@ const testSource2: VideoSrc = {
     {
       // Will work
       uri: 'https://subs5.strem.io/en/download/subencoding-stremio-utf8/src-api/file/1958347503',
+      language: 'en',
+    },
+    {
+      // Will work
+      uri: 'https://subs5.strem.io/en/download/subencoding-stremio-utf8/src-api/file/1958347502',
+      language: 'eng',
+    },
+    {
+      // Will work
+      uri: 'https://subs5.strem.io/en/download/subencoding-stremio-utf8/src-api/file/1958334424',
       language: 'fr',
-      title: 'TECCCST',
     },
   ],
 };
@@ -66,14 +75,6 @@ export default function App() {
           sub: 'fr',
         }}
         paused={paused}
-        onVideoBuffer={() => console.log('onVideoBuffer')}
-        onVideoLoad={(event) => console.log('onVideoLoad', event)}
-        onVideoError={(event) => console.log('OnVideoError', event)}
-        onVideoLoadStart={() => console.log('Load started')}
-        onVideoPlaybackStateChanged={(event) =>
-          console.log('Playback changed', event)
-        }
-        onVideoProgress={(event) => console.log('Progress', event)}
       />
       <View style={styles.parer}>
         <Pressable

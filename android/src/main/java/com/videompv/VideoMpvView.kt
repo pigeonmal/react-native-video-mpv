@@ -8,6 +8,7 @@ import android.view.SurfaceView
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.uimanager.ThemedReactContext
+import com.videompv.MPVLib.mpvEndFileReason
 import com.videompv.MPVLib.mpvEventId
 import com.videompv.MPVLib.mpvFormat
 import com.videompv.api.BasicTrack
@@ -44,23 +45,28 @@ class VideoMpvView(context: ThemedReactContext) :
   private var spuDelay: Double = 0.0
 
   init {
-    mThemedReactContext.addLifecycleEventListener(this)
     val appContext = context.applicationContext
     val mpvDir = File(appContext.getExternalFilesDir(null) ?: appContext.filesDir, "mpv")
-
     Log.d(TAG, "mpv config dir: $mpvDir")
 
-    if (!mpvDir.exists()) mpvDir.mkdirs()
+    try {
+      if (!mpvDir.exists()) mpvDir.mkdirs()
 
-    arrayOf("subfont.ttf").forEach { fileName ->
-      val file = File(mpvDir, fileName)
-      if (file.exists()) return@forEach
-      appContext.assets.open(fileName, AssetManager.ACCESS_STREAMING).copyTo(FileOutputStream(file))
-    }
+      arrayOf("subfont.ttf").forEach { fileName ->
+        val file = File(mpvDir, fileName)
+        if (file.exists()) return@forEach
+        appContext
+                .assets
+                .open(fileName, AssetManager.ACCESS_STREAMING)
+                .copyTo(FileOutputStream(file))
+      }
+    } catch (e: Exception) {}
+    mThemedReactContext.addLifecycleEventListener(this)
 
     MPVLib.create(context)
     MPVLib.setOptionString("config", "yes")
     MPVLib.setOptionString("config-dir", mpvDir.path)
+
     initOptions()
 
     MPVLib.init()
@@ -103,6 +109,8 @@ class VideoMpvView(context: ThemedReactContext) :
     MPVLib.setOptionString("sub-font-provider", "none")
     MPVLib.setOptionString("keep-open", "always")
     MPVLib.setOptionString("sub-scale-with-window", "yes")
+    MPVLib.setOptionString("sub-auto", "no")
+    MPVLib.setOptionString("autoload-files", "no")
 
     // MPVLib.setOptionString("deband", "yes")
     MPVLib.setOptionString("video-sync", "audio")
@@ -148,9 +156,10 @@ class VideoMpvView(context: ThemedReactContext) :
   }
 
   fun observeProperties() {
-    // MPVLib.observeProperty("eof-reached", MPVFormat.MPV_FORMAT_NONE)
-    //  MPVLib.observeProperty("core-idle", MPVFormat.MPV_FORMAT_FLAG) // Like "pause"
-    //  MPVLib.observeProperty("pause", MPVFormat.MPV_FORMAT_FLAG)
+    MPVLib.observeProperty("eof-reached", mpvFormat.MPV_FORMAT_FLAG)
+    MPVLib.observeProperty("paused-for-cache", mpvFormat.MPV_FORMAT_FLAG)
+    MPVLib.observeProperty("core-idle", mpvFormat.MPV_FORMAT_FLAG)
+    MPVLib.observeProperty("pause", mpvFormat.MPV_FORMAT_FLAG)
     MPVLib.observeProperty("time-pos", mpvFormat.MPV_FORMAT_INT64)
   }
 
@@ -164,7 +173,14 @@ class VideoMpvView(context: ThemedReactContext) :
     }
   }
 
-  override fun eventProperty(property: String, value: Boolean) {}
+  override fun eventProperty(property: String, value: Boolean) {
+    when (property) {
+      "eof-reached" -> onVideoEndReached(value)
+      "paused-for-cache" -> onVideoPausedForCache(value)
+      "core-idle" -> onVideoCoreIdle(value)
+      "pause" -> onVideoPaused(value)
+    }
+  }
 
   override fun eventProperty(property: String, value: String) {}
 
@@ -179,9 +195,34 @@ class VideoMpvView(context: ThemedReactContext) :
 
   override fun eventFileEnd(reason: Int, error: String?) {
     Log.d(TAG, "Video End $reason")
-    cleanVariables()
-
+    if (reason != mpvEndFileReason.MPV_END_FILE_REASON_STOP &&
+                    reason != mpvEndFileReason.MPV_END_FILE_REASON_QUIT
+    ) {
+      cleanVariables()
+      if (reason == mpvEndFileReason.MPV_END_FILE_REASON_ERROR) {
+        eventEmitter.onVideoError(error ?: "Unknown error", 1000)
+      }
+    }
     eventEmitter.onVideoStop(reason)
+  }
+
+  private fun onVideoEndReached(value: Boolean) {
+    if (value) {
+      eventEmitter.onVideoEndReached()
+    }
+  }
+
+  private fun onVideoPausedForCache(value: Boolean) {
+    eventEmitter.onVideoBuffer(value)
+  }
+
+  private fun onVideoPaused(value: Boolean) {
+    setKeepScreenOn(!value)
+  }
+
+  private fun onVideoCoreIdle(value: Boolean) {
+    val isSeeking = MPVLib.getPropertyString("seeking") == "yes"
+    eventEmitter.onVideoPlaybackStateChanged(!value, isSeeking)
   }
 
   private fun updatePlaybackPos(pos: Long) {
@@ -196,16 +237,13 @@ class VideoMpvView(context: ThemedReactContext) :
 
   private fun onVideoLoadStart() {
     eventEmitter.onVideoLoadStart()
-  }
-
-  private fun onVideoLoaded() {
-    Log.d(TAG, "Video loaded !")
-    playerParsed = true
 
     val sideloadTracks = src.sideLoadedTextTracks
 
     if (sideloadTracks != null) {
+      val videoID = src.uniqueID
       for (externText in sideloadTracks.tracks) {
+        if (videoID != src.uniqueID) continue // Check if video is changed
         MPVLib.command(
                 arrayOf(
                         "sub-add",
@@ -217,6 +255,11 @@ class VideoMpvView(context: ThemedReactContext) :
         )
       }
     }
+  }
+
+  private fun onVideoLoaded() {
+    Log.d(TAG, "Video loaded !")
+    playerParsed = true
 
     val textTracks = ArrayList<BasicTrack>()
     val audioTracks = ArrayList<BasicTrack>()
@@ -336,16 +379,13 @@ class VideoMpvView(context: ThemedReactContext) :
   fun setResizeMode(mode: String?) {}
 
   fun setSource(source: VideoSrc) {
-    Log.d(TAG, "reset set")
-
-    if (source.isEquals(src)) {
+    if (source == src) {
       return
     }
+    Log.d(TAG, "Unload media (Set source)")
+    cleanVariables(source)
 
-    unloadMedia()
     if (source.uri != null) {
-      src = source
-
       if (source.headers.size > 0) {
         // Combine all headers into a single comma-separated string
         val httpHeaderString =
@@ -358,6 +398,7 @@ class VideoMpvView(context: ThemedReactContext) :
 
       MPVLib.setOptionString("sid", "auto")
       MPVLib.setOptionString("aid", "auto")
+      MPVLib.setOptionString("pause", if (paused) "yes" else "no")
 
       MPVLib.setOptionString(
               "start",
@@ -370,7 +411,7 @@ class VideoMpvView(context: ThemedReactContext) :
         filePath = source.uri.toString()
       }
     } else {
-      MPVLib.command(arrayOf("stop"))
+      unloadMedia()
     }
   }
 
@@ -381,14 +422,14 @@ class VideoMpvView(context: ThemedReactContext) :
     }
   }
 
-  private fun cleanVariables() {
+  private fun cleanVariables(source: VideoSrc = VideoSrc()) {
     filePath = null
     playerParsed = false
-    src = VideoSrc()
+    src = source
   }
 
   private fun unloadMedia() {
-    cleanVariables()
+    MPVLib.command(arrayOf("stop"))
   }
 
   /** Sets the VO to use. It is automatically disabled/enabled when the surface dis-/appears. */
