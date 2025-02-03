@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { View, StyleSheet, Pressable, Text } from 'react-native';
-import type { VideoSrc } from '../../src/VideoMpvViewNativeComponent';
-import { VideoMpvView } from 'react-native-video-mpv';
+import VideoMPV, {
+  type ReactVideoMPVSource,
+  type VideoMPVRef,
+} from 'react-native-video-mpv';
 
-const testSource: VideoSrc = {
+const testSource: ReactVideoMPVSource = {
   startPosition: 30,
   textTracks: [
     {
@@ -39,7 +41,7 @@ const testSource: VideoSrc = {
   uri: 'https://github.com/ietf-wg-cellar/matroska-test-files/raw/refs/heads/master/test_files/test5.mkv',
 };
 
-const testSource2: VideoSrc = {
+const testSource2: ReactVideoMPVSource = {
   startPosition: 100,
   uri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
   textTracks: [
@@ -63,12 +65,14 @@ const testSource2: VideoSrc = {
 
 export default function App() {
   const [paused, setPaused] = useState(false);
-  const [source, setSource] = useState<VideoSrc | undefined>(testSource);
+
+  const mpvRef = useRef<VideoMPVRef>(null);
 
   return (
     <View style={styles.container}>
-      <VideoMpvView
-        src={source}
+      <VideoMPV
+        ref={mpvRef}
+        initialSource={testSource}
         style={styles.box}
         langsPref={{
           audio: 'fr',
@@ -80,7 +84,7 @@ export default function App() {
         <Pressable
           style={styles.button}
           onPress={() => {
-            setSource(undefined);
+            mpvRef.current?.setSource(undefined);
           }}
         >
           <Text style={styles.textButton}>Source undefinded</Text>
@@ -88,7 +92,7 @@ export default function App() {
         <Pressable
           style={styles.button}
           onPress={() => {
-            setSource(testSource);
+            mpvRef.current?.setSource(testSource);
           }}
         >
           <Text style={styles.textButton}>Source 1</Text>
@@ -96,7 +100,7 @@ export default function App() {
         <Pressable
           style={styles.button}
           onPress={() => {
-            setSource(testSource2);
+            mpvRef.current?.setSource(testSource2);
           }}
         >
           <Text style={styles.textButton}>Source 2</Text>
@@ -111,7 +115,12 @@ export default function App() {
         >
           <Text style={styles.textButton}>PLAY / PAUSE</Text>
         </Pressable>
-        <Pressable style={styles.button} onPress={() => {}}>
+        <Pressable
+          style={styles.button}
+          onPress={() => {
+            mpvRef.current?.seek(20);
+          }}
+        >
           <Text style={styles.textButton}>SEEK</Text>
         </Pressable>
       </View>

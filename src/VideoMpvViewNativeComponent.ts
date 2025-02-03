@@ -33,7 +33,7 @@ export type VideoSrc = Readonly<{
 export type LangsPref = Readonly<{
   audio?: string; // default is os language
   sub?: string; // default is os language
-  subMatchingAudio?: WithDefault<boolean, true>;
+  subMatchingAudio?: boolean; // default true
 }>;
 
 export type OnLoadData = Readonly<{
@@ -90,7 +90,7 @@ export type OnPlaybackStateChangedData = Readonly<{
   isSeeking: boolean;
 }>;
 
-type SubtitleStyle = Readonly<{
+export type SubtitleStyle = Readonly<{
   fontSize?: Int32; // Default 55
   color?: string; // Default white
   bold?: boolean; // Default false
@@ -98,7 +98,7 @@ type SubtitleStyle = Readonly<{
   borderStyle?: string; // Default to outline-and-shadow <outline-and-shadow|opaque-box|background-box>
 }>;
 
-export interface NativeProps extends ViewProps {
+interface NativeProps extends ViewProps {
   src?: VideoSrc;
   repeat?: boolean;
   zoomMode?: boolean;
