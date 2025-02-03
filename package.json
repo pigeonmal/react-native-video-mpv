@@ -22,6 +22,7 @@
     "lib",
     "android",
     "ios",
+    "buildscripts",
     "cpp",
     "*.podspec",
     "react-native.config.js",
@@ -47,7 +48,8 @@
   },
   "keywords": [
     "react-native",
-    "ios",
+    "mpv",
+    "video player",
     "android"
   ],
   "repository": {
