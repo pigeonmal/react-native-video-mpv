@@ -2,6 +2,8 @@ package com.videompv
 
 import android.content.res.AssetManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
@@ -24,7 +26,8 @@ class VideoMpvView(context: ThemedReactContext) :
 
   /* SYSTEM */
   internal final val eventEmitter = VideoMpvEventEmitter()
-  private val mThemedReactContext: ThemedReactContext = context
+  private val eventUiHandler = Handler(Looper.getMainLooper())
+
   private var activityIsForeground = true
   private var playerDestoryed = false
   private var isInHostPause = false
@@ -56,7 +59,8 @@ class VideoMpvView(context: ThemedReactContext) :
       if (file.exists()) return@forEach
       appContext.assets.open(fileName, AssetManager.ACCESS_STREAMING).copyTo(FileOutputStream(file))
     }
-    mThemedReactContext.addLifecycleEventListener(this)
+
+    (this.context as ThemedReactContext).addLifecycleEventListener(this)
 
     MPVLib.create(context)
     MPVLib.setOptionString("config", "yes")
@@ -141,7 +145,7 @@ class VideoMpvView(context: ThemedReactContext) :
   fun destroy() {
     cleanVariables()
     playerDestoryed = true
-    mThemedReactContext.removeLifecycleEventListener(this)
+    (this.context as ThemedReactContext).removeLifecycleEventListener(this)
     MPVLib.removeObserver(this)
 
     // Disable surface callbacks to avoid using unintialized mpv state
@@ -212,7 +216,8 @@ class VideoMpvView(context: ThemedReactContext) :
   }
 
   private fun onVideoPaused(value: Boolean) {
-    //   setKeepScreenOn(!value)
+    if (!activityIsForeground) return
+    eventUiHandler.post { setKeepScreenOn(!value) }
   }
 
   private fun onVideoCoreIdle(value: Boolean) {
@@ -444,6 +449,7 @@ class VideoMpvView(context: ThemedReactContext) :
 
   override fun onHostPause() {
     activityIsForeground = false
+    eventUiHandler.removeCallbacksAndMessages(null)
     if (!playerDestoryed && !paused) {
       paused = true
       isInHostPause = true
@@ -452,18 +458,6 @@ class VideoMpvView(context: ThemedReactContext) :
   }
 
   override fun onHostResume() {
-    /**
-     * Resume the player when the host is resumed.
-     *
-     * We only really care about resuming the player when the host is resumed if the player was
-     * previously paused because the host was paused. This is because the `onHostPause` callback
-     * will pause the player if the host is paused. If the host is paused, the player is paused. If
-     * the host is resumed, the player should be resumed.
-     *
-     * @see onHostPause
-     */
-    /** *********** ✨ Codeium Command ⭐ */
-    /** **** 2c95bbf5-e5f9-46de-bd75-328a915f0b99 */
     activityIsForeground = true
     if (isInHostPause) {
       isInHostPause = false
@@ -504,3 +498,4 @@ class VideoMpvView(context: ThemedReactContext) :
     internal const val TAG = "VideoMpvView"
   }
 }
+
