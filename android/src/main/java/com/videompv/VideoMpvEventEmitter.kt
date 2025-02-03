@@ -15,7 +15,8 @@ enum class EventTypes(val eventName: String) {
     EVENT_LOAD("onVideoLoad"),
     EVENT_ERROR("onVideoError"),
     EVENT_PROGRESS("onVideoProgress"),
-    EVENT_END("onVideoEnd"),
+    EVENT_STOP("onVideoStop"),
+    EVENT_EOF_REACHED("onVideoEndReached"),
     EVENT_BUFFER("onVideoBuffer"),
     EVENT_PLAYBACK_STATE_CHANGED("onVideoPlaybackStateChanged");
 
@@ -48,7 +49,8 @@ class VideoMpvEventEmitter {
     lateinit var onVideoProgress:
             (currentPosition: Double, seekableDuration: Double, progress: Double) -> Unit
     lateinit var onVideoPlaybackStateChanged: (isPlaying: Boolean, isSeeking: Boolean) -> Unit
-    lateinit var onVideoEnd: () -> Unit
+    lateinit var onVideoEndReached: () -> Unit
+    lateinit var onVideoStop: (reason: Int) -> Unit
     lateinit var onVideoBuffer: (isBuffering: Boolean) -> Unit
 
     fun addEventEmitters(reactContext: ThemedReactContext, view: VideoMpvView) {
@@ -104,7 +106,11 @@ class VideoMpvEventEmitter {
                     putBoolean("isSeeking", isSeeking)
                 }
             }
-            onVideoEnd = { event.dispatch(EventTypes.EVENT_END) }
+            onVideoEndReached = { event.dispatch(EventTypes.EVENT_EOF_REACHED) }
+            onVideoStop = { reason ->
+                event.dispatch(EventTypes.EVENT_STOP) { putInt("reason", reason) }
+            }
+
             onVideoBuffer = { isBuffering ->
                 event.dispatch(EventTypes.EVENT_BUFFER) { putBoolean("isBuffering", isBuffering) }
             }

@@ -8,14 +8,15 @@ import android.view.SurfaceView
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.uimanager.ThemedReactContext
-import com.videompv.MPVUtil.MPVEventId
-import com.videompv.MPVUtil.MPVFormat
+import com.videompv.MPVLib.mpvEventId
+import com.videompv.MPVLib.mpvFormat
 import com.videompv.api.BasicTrack
+import com.videompv.api.LangsPref
+import com.videompv.api.SubtitleStyle
 import com.videompv.api.VideoBasicTrack
 import com.videompv.api.VideoSrc
 import java.io.File
 import java.io.FileOutputStream
-import java.util.Locale
 
 class VideoMpvView(context: ThemedReactContext) :
         SurfaceView(context), SurfaceHolder.Callback, LifecycleEventListener, MPVLib.EventObserver {
@@ -37,8 +38,8 @@ class VideoMpvView(context: ThemedReactContext) :
   private var muted: Boolean = false
   private var volume = 100
   private var repeat: Boolean = false // Default true by mpv but false in my library
-  private var selectedTextTrack: Int = 0 // -1: Disable 0: Auto >0: ID
-  private var selectedAudioTrack: Int = 0 // -1: Disable 0: Auto >0: ID
+  private var langsPref: LangsPref = LangsPref("", "", true)
+  private var subStyle: SubtitleStyle = SubtitleStyle()
   // private var scaleType: String = ScaleType.SURFACE_BEST_FIT
   private var spuDelay: Double = 0.0
 
@@ -96,10 +97,7 @@ class VideoMpvView(context: ThemedReactContext) :
       )
     }
 
-    val deviceLanguage = Locale.getDefault().isO3Language
-    Log.d(TAG, "Device language: $deviceLanguage")
-    MPVLib.setOptionString("alang", deviceLanguage)
-    MPVLib.setOptionString("slang", deviceLanguage)
+    setLangsPref(LangsPref.parse(null)) // language default os
 
     MPVLib.setOptionString("tls-verify", "no")
     MPVLib.setOptionString("sub-font-provider", "none")
@@ -153,7 +151,7 @@ class VideoMpvView(context: ThemedReactContext) :
     // MPVLib.observeProperty("eof-reached", MPVFormat.MPV_FORMAT_NONE)
     //  MPVLib.observeProperty("core-idle", MPVFormat.MPV_FORMAT_FLAG) // Like "pause"
     //  MPVLib.observeProperty("pause", MPVFormat.MPV_FORMAT_FLAG)
-    MPVLib.observeProperty("time-pos", MPVFormat.MPV_FORMAT_INT64)
+    MPVLib.observeProperty("time-pos", mpvFormat.MPV_FORMAT_INT64)
   }
 
   /* Events */
@@ -174,13 +172,19 @@ class VideoMpvView(context: ThemedReactContext) :
 
   override fun event(eventId: Int) {
     when (eventId) {
-      MPVEventId.MPV_EVENT_FILE_LOADED -> onVideoLoaded()
-      MPVEventId.MPV_EVENT_START_FILE -> eventEmitter.onVideoLoadStart()
-      MPVEventId.MPV_EVENT_END_FILE -> onVideoEnd()
+      mpvEventId.MPV_EVENT_FILE_LOADED -> onVideoLoaded()
+      mpvEventId.MPV_EVENT_START_FILE -> onVideoLoadStart()
     }
   }
 
-  fun updatePlaybackPos(pos: Long) {
+  override fun eventFileEnd(reason: Int, error: String?) {
+    Log.d(TAG, "Video End $reason")
+    cleanVariables()
+
+    eventEmitter.onVideoStop(reason)
+  }
+
+  private fun updatePlaybackPos(pos: Long) {
     if (playerDestoryed || !playerParsed) return
     Log.d(TAG, "PROGRESS $pos")
     eventEmitter.onVideoProgress(
@@ -188,6 +192,10 @@ class VideoMpvView(context: ThemedReactContext) :
             (MPVLib.getPropertyDouble("duration") ?: 0.0),
             (MPVLib.getPropertyDouble("percent-pos") ?: 0.0) / 100.0
     )
+  }
+
+  private fun onVideoLoadStart() {
+    eventEmitter.onVideoLoadStart()
   }
 
   private fun onVideoLoaded() {
@@ -210,9 +218,6 @@ class VideoMpvView(context: ThemedReactContext) :
       }
     }
 
-    setTrackID("sid", selectedTextTrack)
-    setTrackID("aid", selectedAudioTrack)
-
     val textTracks = ArrayList<BasicTrack>()
     val audioTracks = ArrayList<BasicTrack>()
     val videosTracks = ArrayList<VideoBasicTrack>()
@@ -232,6 +237,7 @@ class VideoMpvView(context: ThemedReactContext) :
       val title: String? = MPVLib.getPropertyString("track-list/$i/title")
       val selected = MPVLib.getPropertyString("track-list/$i/selected") == "yes"
 
+      Log.d(TAG, "$type $mpvId $lang $title $selected")
       if (isAudioTrack) {
         audioTracks.add(BasicTrack(title, lang, mpvId, selected))
       } else if (isSubTrack) {
@@ -259,11 +265,6 @@ class VideoMpvView(context: ThemedReactContext) :
             textTracks,
             videosTracks
     )
-  }
-
-  private fun onVideoEnd() {
-    Log.d(TAG, "Video End")
-    cleanVariables()
   }
 
   // Player commands
@@ -297,30 +298,41 @@ class VideoMpvView(context: ThemedReactContext) :
   fun setVolumeModifier(vol: Int) {
     if (vol == volume) return
     volume = vol
-    MPVLib.setPropertyInt("volume", volume)
+    MPVLib.setPropertyInt("volume", vol)
   }
 
-  fun setTextIdTrack(trackId: Int) {
-    if (trackId != selectedTextTrack) {
-      selectedTextTrack = trackId
-      if (playerParsed) setTrackID("sid", trackId)
+  fun setLangsPref(newPrefs: LangsPref) {
+    if (langsPref != newPrefs) {
+      langsPref = newPrefs
+      MPVLib.setPropertyString("alang", newPrefs.alang)
+      MPVLib.setPropertyString("slang", newPrefs.slang)
+      MPVLib.setPropertyString(
+              "subs-with-matching-audio",
+              if (newPrefs.subMatchingAudio) "yes" else "no"
+      )
     }
   }
 
-  private fun setTrackID(propName: String, trackId: Int) {
-    if (trackId > 0) {
-      MPVLib.setPropertyInt(propName, trackId)
-    } else {
-      MPVLib.setPropertyString(propName, if (trackId == 0) "auto" else "no")
+  fun setSubStyle(newStyle: SubtitleStyle) {
+    if (subStyle != newStyle) {
+      subStyle = newStyle
+      MPVLib.setPropertyInt("sub-font-size", newStyle.fontSize)
+      MPVLib.setPropertyString("sub-color", newStyle.color)
+      MPVLib.setPropertyString("sub-bold", if (newStyle.bold) "yes" else "no")
+      MPVLib.setPropertyString("sub-back-color", newStyle.backgroundColor)
     }
   }
 
-  fun setAudioIdTrack(trackId: Int) {
-    if (trackId != selectedAudioTrack) {
-      selectedAudioTrack = trackId
-      if (playerParsed) setTrackID("aid", trackId)
-    }
+  fun setPlayerPropertyString(key: String, value: String) {
+    if (playerDestoryed) return
+    MPVLib.setPropertyString(key, value)
   }
+
+  fun setPlayerPropertyInt(key: String, value: Int) {
+    if (playerDestoryed) return
+    MPVLib.setPropertyInt(key, value)
+  }
+
   fun setResizeMode(mode: String?) {}
 
   fun setSource(source: VideoSrc) {
@@ -330,6 +342,7 @@ class VideoMpvView(context: ThemedReactContext) :
       return
     }
 
+    unloadMedia()
     if (source.uri != null) {
       src = source
 
@@ -343,6 +356,9 @@ class VideoMpvView(context: ThemedReactContext) :
         MPVLib.setOptionString("http-header-fields", httpHeaderString)
       }
 
+      MPVLib.setOptionString("sid", "auto")
+      MPVLib.setOptionString("aid", "auto")
+
       MPVLib.setOptionString(
               "start",
               if (source.startPosition >= 0) source.startPosition.toString() else ""
@@ -354,7 +370,7 @@ class VideoMpvView(context: ThemedReactContext) :
         filePath = source.uri.toString()
       }
     } else {
-      unloadMedia()
+      MPVLib.command(arrayOf("stop"))
     }
   }
 
@@ -373,7 +389,6 @@ class VideoMpvView(context: ThemedReactContext) :
 
   private fun unloadMedia() {
     cleanVariables()
-    MPVLib.command(arrayOf("stop"))
   }
 
   /** Sets the VO to use. It is automatically disabled/enabled when the surface dis-/appears. */

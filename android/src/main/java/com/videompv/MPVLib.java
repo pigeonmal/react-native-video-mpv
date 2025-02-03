@@ -9,6 +9,7 @@ import android.graphics.Bitmap;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 @SuppressWarnings("unused")
 public class MPVLib {
@@ -95,6 +96,13 @@ public class MPVLib {
           }
      }
 
+     public static void eventFileEnd(int reason, String error) {
+          synchronized (observers) {
+               for (EventObserver o : observers)
+                    o.eventFileEnd(reason, error);
+          }
+     }
+
      private static final List<LogObserver> log_observers = new ArrayList<>();
 
      public static void addLogObserver(LogObserver o) {
@@ -117,6 +125,7 @@ public class MPVLib {
           void eventProperty(@NonNull String property, boolean value);
           void eventProperty(@NonNull String property, @NonNull String value);
           void eventProperty(@NonNull String property, double value);
+          void eventFileEnd(int reason, @Nullable String errorfile);
           void event(int eventId);
      }
 
@@ -168,5 +177,13 @@ public class MPVLib {
           public static final int MPV_LOG_LEVEL_V=50;
           public static final int MPV_LOG_LEVEL_DEBUG=60;
           public static final int MPV_LOG_LEVEL_TRACE=70;
+     }
+
+     public static class mpvEndFileReason {
+        public static final int MPV_END_FILE_REASON_EOF = 0;
+        public static final int MPV_END_FILE_REASON_STOP = 2;
+        public static final int MPV_END_FILE_REASON_QUIT = 3;
+        public static final int MPV_END_FILE_REASON_ERROR = 4;
+        public static final int MPV_END_FILE_REASON_REDIRECT = 5;
      }
 }

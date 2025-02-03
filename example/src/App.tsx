@@ -42,6 +42,14 @@ const testSource: VideoSrc = {
 const testSource2: VideoSrc = {
   startPosition: 100,
   uri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+  textTracks: [
+    {
+      // Will work
+      uri: 'https://subs5.strem.io/en/download/subencoding-stremio-utf8/src-api/file/1958347503',
+      language: 'fr',
+      title: 'TECCCST',
+    },
+  ],
 };
 
 export default function App() {
@@ -53,10 +61,12 @@ export default function App() {
       <VideoMpvView
         src={source}
         style={styles.box}
-        selectedTextTrack={4}
+        langsPref={{
+          audio: 'fr',
+          sub: 'fr',
+        }}
         paused={paused}
         onVideoBuffer={() => console.log('onVideoBuffer')}
-        onVideoEnd={() => console.log('onVideoEnd')}
         onVideoLoad={(event) => console.log('onVideoLoad', event)}
         onVideoError={(event) => console.log('OnVideoError', event)}
         onVideoLoadStart={() => console.log('Load started')}

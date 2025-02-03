@@ -2,7 +2,6 @@ package com.videompv
 
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
-import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
@@ -10,8 +9,12 @@ import com.facebook.react.uimanager.ViewManagerDelegate
 import com.facebook.react.uimanager.annotations.ReactProp
 import com.facebook.react.viewmanagers.VideoMpvViewManagerDelegate
 import com.facebook.react.viewmanagers.VideoMpvViewManagerInterface
+import com.videompv.api.LangsPref
+import com.videompv.api.SubtitleStyle
 import com.videompv.api.VideoSrc
 import com.videompv.toolbox.ReactBridgeUtils.safeGetDoubleFromArray
+import com.videompv.toolbox.ReactBridgeUtils.safeGetIntFromArray
+import com.videompv.toolbox.ReactBridgeUtils.safeGetStringFromArray
 
 @ReactModule(name = VideoMpvViewManager.NAME)
 class VideoMpvViewManager :
@@ -60,16 +63,6 @@ class VideoMpvViewManager :
     videoView.setResizeMode(resizeMode)
   }
 
-  @ReactProp(name = PROP_SELECTED_TEXT_TRACK, defaultInt = 0)
-  override fun setSelectedTextTrack(videoView: VideoMpvView, selectedTextTrack: Int) {
-    videoView.setTextIdTrack(selectedTextTrack)
-  }
-
-  @ReactProp(name = PROP_SELECTED_AUDIO_TRACK, defaultInt = 0)
-  override fun setSelectedAudioTrack(videoView: VideoMpvView, selectedAudioTrack: Int) {
-    videoView.setAudioIdTrack(selectedAudioTrack)
-  }
-
   @ReactProp(name = PROP_PAUSED, defaultBoolean = false)
   override fun setPaused(videoView: VideoMpvView, paused: Boolean) {
     videoView.setPausedModifier(paused)
@@ -90,6 +83,16 @@ class VideoMpvViewManager :
     videoView.setTextTrackDelay(textTrackDelay.toDouble())
   }
 
+  @ReactProp(name = PROP_LANGS_PREF)
+  override fun setLangsPref(videoView: VideoMpvView, langsPref: ReadableMap?) {
+    videoView.setLangsPref(LangsPref.parse(langsPref))
+  }
+
+  @ReactProp(name = PROP_SUB_STYLE)
+  override fun setSubStyle(videoView: VideoMpvView, subStyle: ReadableMap?) {
+    videoView.setSubStyle(SubtitleStyle.parse(subStyle))
+  }
+
   override fun receiveCommand(videoView: VideoMpvView, commandId: String, args: ReadableArray?) {
     super.receiveCommand(videoView, commandId, args)
     when (commandId) {
@@ -97,6 +100,20 @@ class VideoMpvViewManager :
         val seekTo = safeGetDoubleFromArray(args, 0, null)
         if (seekTo != null) {
           videoView.seek(seekTo)
+        }
+      }
+      COMMAND_SET_PROP_STRING -> {
+        val propName = safeGetStringFromArray(args, 0, null)
+        val propValue = safeGetStringFromArray(args, 1, null)
+        if (propName != null && propValue != null) {
+          videoView.setPlayerPropertyString(propName, propValue)
+        }
+      }
+      COMMAND_SET_PROP_INT -> {
+        val propName = safeGetStringFromArray(args, 0, null)
+        val propValue = safeGetIntFromArray(args, 1, null)
+        if (propName != null && propValue != null) {
+          videoView.setPlayerPropertyInt(propName, propValue)
         }
       }
     }
@@ -108,13 +125,15 @@ class VideoMpvViewManager :
     private const val PROP_SRC = "src"
     private const val PROP_REPEAT = "repeat"
     private const val PROP_RESIZE_MODE = "resizeMode"
-    private const val PROP_SELECTED_TEXT_TRACK = "selectedTextTrack"
-    private const val PROP_SELECTED_AUDIO_TRACK = "selectedAudioTrack"
     private const val PROP_PAUSED = "paused"
     private const val PROP_MUTED = "muted"
     private const val PROP_VOLUME = "volume"
     private const val PROP_TEXT_TRACK_DELAY = "textTrackDelay"
+    private const val PROP_LANGS_PREF = "langsPref"
+    private const val PROP_SUB_STYLE = "subStyle"
 
     private const val COMMAND_SEEK_NAME = "seek"
+    private const val COMMAND_SET_PROP_STRING = "setPropString"
+    private const val COMMAND_SET_PROP_INT = "setPropInt"
   }
 }

@@ -18,26 +18,27 @@ class SideLoadedTrack {
     }
 
     companion object {
-        val SIDELOAD_TEXT_TRACK_LANGUAGE = "language"
-        val SIDELOAD_TEXT_TRACK_TITLE = "title"
-        val SIDELOAD_TEXT_TRACK_URI = "uri"
+        const val SIDELOAD_TEXT_TRACK_LANGUAGE = "language"
+        const val SIDELOAD_TEXT_TRACK_TITLE = "title"
+        const val SIDELOAD_TEXT_TRACK_URI = "uri"
 
         fun parse(src: ReadableMap?): SideLoadedTrack? {
-            val sideLoadedTextTrack = SideLoadedTrack()
             if (src == null) {
                 return null
             }
+            val sideLoadedTextTrack = SideLoadedTrack()
+
             val parsedUri = safeGetString(src, SIDELOAD_TEXT_TRACK_URI, null)
             if (parsedUri == null) {
                 return null
             }
-            sideLoadedTextTrack.language =
-                    safeGetString(src, SIDELOAD_TEXT_TRACK_LANGUAGE, null)
-            sideLoadedTextTrack.title =
-                    safeGetString(src, SIDELOAD_TEXT_TRACK_TITLE, null)
+            sideLoadedTextTrack.language = safeGetString(src, SIDELOAD_TEXT_TRACK_LANGUAGE, null)
+            sideLoadedTextTrack.title = safeGetString(src, SIDELOAD_TEXT_TRACK_TITLE, null)
             sideLoadedTextTrack.uri = parsedUri
 
             return sideLoadedTextTrack
         }
     }
+
+   
 }

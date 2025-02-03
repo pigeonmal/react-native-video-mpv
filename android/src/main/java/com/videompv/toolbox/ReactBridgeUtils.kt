@@ -73,6 +73,26 @@ object ReactBridgeUtils {
             else fallback
 
     @JvmStatic
+    fun safeGetStringFromArray(array: ReadableArray?, index: Int, fallback: String?): String? =
+            if (array != null &&
+                            array.size() > index &&
+                            !array.isNull(index) &&
+                            array.getType(0) == ReadableType.String
+            )
+                    array.getString(index)
+            else fallback
+
+    @JvmStatic
+    fun safeGetIntFromArray(array: ReadableArray?, index: Int, fallback: Int?): Int? =
+            if (array != null &&
+                            array.size() > index &&
+                            !array.isNull(index) &&
+                            array.getType(0) == ReadableType.Number
+            )
+                    array.getInt(index)
+            else fallback
+
+    @JvmStatic
     fun safeParseInt(value: String?, default: Int): Int {
         if (value == null) {
             return default
