@@ -67,7 +67,7 @@ object ReactBridgeUtils {
             if (array != null &&
                             array.size() > index &&
                             !array.isNull(index) &&
-                            array.getType(0) == ReadableType.Number
+                            array.getType(index) == ReadableType.Number
             )
                     array.getDouble(index)
             else fallback
@@ -77,7 +77,7 @@ object ReactBridgeUtils {
             if (array != null &&
                             array.size() > index &&
                             !array.isNull(index) &&
-                            array.getType(0) == ReadableType.String
+                            array.getType(index) == ReadableType.String
             )
                     array.getString(index)
             else fallback
@@ -87,7 +87,7 @@ object ReactBridgeUtils {
             if (array != null &&
                             array.size() > index &&
                             !array.isNull(index) &&
-                            array.getType(0) == ReadableType.Number
+                            array.getType(index) == ReadableType.Number
             )
                     array.getInt(index)
             else fallback
