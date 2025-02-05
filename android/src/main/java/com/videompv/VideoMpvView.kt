@@ -83,8 +83,7 @@ class VideoMpvView(context: ThemedReactContext) :
   }
 
   fun initOptions() {
-    // low device (phone) optimized profile
-    MPVLib.setOptionString("profile", "fast")
+    MPVLib.setOptionString("profile", "high-quality") // can be also "fast" for low devices
     MPVLib.setOptionString("vo", voInUse)
 
     // vo: set display fps as reported by android
@@ -143,6 +142,7 @@ class VideoMpvView(context: ThemedReactContext) :
    * Call this once before the view is destroyed.
    */
   fun destroy() {
+    if (playerDestoryed) return
     cleanVariables()
     playerDestoryed = true
     (this.context as ThemedReactContext).removeLifecycleEventListener(this)
