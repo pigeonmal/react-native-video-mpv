@@ -124,6 +124,8 @@ class VideoMpvView(context: ThemedReactContext) :
     MPVLib.setOptionString("input-builtin-dragging", "no")
 
     val cacheMegs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) 64 else 32
+    MPVLib.setOptionString("cache", "yes")
+    MPVLib.setOptionString("cache-pause-initial", "yes")
     MPVLib.setOptionString("demuxer-max-bytes", "${cacheMegs * 1024 * 1024}")
     MPVLib.setOptionString("demuxer-max-back-bytes", "${cacheMegs * 1024 * 1024}")
 
