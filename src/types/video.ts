@@ -1,6 +1,6 @@
 import type { ViewProps } from 'react-native';
 import type { ReactVideoMPVEvents } from './events';
-import type { LangsPref, SubtitleStyle } from '../VideoMpvViewNativeComponent';
+import type { LangsPref } from '../VideoMpvViewNativeComponent';
 
 export type Headers = Record<string, string>;
 
@@ -19,6 +19,14 @@ export type ReactVideoMPVsourceProperties = {
   headers?: Headers;
   startPosition?: number;
   textTracks?: SideloadTrack[];
+};
+
+export type SubtitleStyle = {
+  fontSize?: number; // default 55
+  color?: string; // default '1.0/1.0/1.0' (white)
+  bold?: boolean; // default false
+  backgroundColor?: string; // default '0.0/0.0/0.0/0.0' (transparent)
+  borderStyle?: 'outline-and-shadow' | 'opaque-box' | 'background-box'; // default 'outline-and-shadow'
 };
 
 export type ReactVideoMPVSource = Readonly<

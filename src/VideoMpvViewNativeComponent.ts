@@ -90,12 +90,12 @@ export type OnPlaybackStateChangedData = Readonly<{
   isSeeking: boolean;
 }>;
 
-export type SubtitleStyle = Readonly<{
-  fontSize?: Int32; // Default 55
-  color?: string; // Default white
-  bold?: boolean; // Default false
-  backgroundColor?: string; // Default to transparent black
-  borderStyle?: string; // Default to outline-and-shadow <outline-and-shadow|opaque-box|background-box>
+type SubtitleStyle = Readonly<{
+  fontSize?: Int32;
+  color?: string;
+  bold?: boolean;
+  backgroundColor?: string;
+  borderStyle?: string;
 }>;
 
 interface NativeProps extends ViewProps {
