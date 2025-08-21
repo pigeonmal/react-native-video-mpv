@@ -11,13 +11,7 @@ npm install react-native-video-mpv
 ## Usage
 
 
-```js
-import { VideoMpvView } from "react-native-video-mpv";
-
-// ...
-
-<VideoMpvView color="tomato" />
-```
+The library work good, have likely sameprop of react-native-video.
 
 
 ## Contributing
@@ -29,5 +23,4 @@ See the [contributing guide](CONTRIBUTING.md) to learn how to contribute to the 
 MIT
 
 ---
-
-Made with [create-react-native-library](https://github.com/callstack/react-native-builder-bob)
+I use also made react-native-video-vlc
