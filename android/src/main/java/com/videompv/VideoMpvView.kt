@@ -33,7 +33,7 @@ class VideoMpvView(context: ThemedReactContext) :
   private var isInHostPause = false
   private var playerParsed = false
   private var filePath: String? = null
-  private var hwdec: String = "auto" // https://mpv.io/manual/stable/#options-hwdec
+  private var hwdec: String = "mediacodec,mediacodec-copy" // https://mpv.io/manual/stable/#options-hwdec
   private var voInUse: String = "gpu" // https://mpv.io/manual/stable/#video-output-drivers-vo
 
   /* PROPS */
@@ -83,7 +83,7 @@ class VideoMpvView(context: ThemedReactContext) :
   }
 
   fun initOptions() {
-    MPVLib.setOptionString("profile", "high-quality") // can be also "fast" for low devices
+    MPVLib.setOptionString("profile", "fast") // can be also "fast" for low devices
     MPVLib.setOptionString("vo", voInUse)
 
     // vo: set display fps as reported by android
@@ -123,9 +123,7 @@ class VideoMpvView(context: ThemedReactContext) :
     MPVLib.setOptionString("input-builtin-bindings", "no")
     MPVLib.setOptionString("input-builtin-dragging", "no")
 
-    val cacheMegs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) 64 else 32
-    MPVLib.setOptionString("cache", "yes")
-    MPVLib.setOptionString("cache-pause-initial", "yes")
+    val cacheMegs = 32
     MPVLib.setOptionString("demuxer-max-bytes", "${cacheMegs * 1024 * 1024}")
     MPVLib.setOptionString("demuxer-max-back-bytes", "${cacheMegs * 1024 * 1024}")
 
