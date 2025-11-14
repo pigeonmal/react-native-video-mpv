@@ -10,9 +10,9 @@ import android.view.SurfaceView
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.uimanager.ThemedReactContext
-import com.videompv.MPVLib.mpvEndFileReason
-import com.videompv.MPVLib.mpvEventId
-import com.videompv.MPVLib.mpvFormat
+import com.videompv.MPVLib.MpvEndFileReason
+import com.videompv.MPVLib.MpvEvent
+import com.videompv.MPVLib.MpvFormat
 import com.videompv.api.BasicTrack
 import com.videompv.api.LangsPref
 import com.videompv.api.SubtitleStyle
@@ -155,11 +155,11 @@ class VideoMpvView(context: ThemedReactContext) :
   }
 
   fun observeProperties() {
-    MPVLib.observeProperty("eof-reached", mpvFormat.MPV_FORMAT_FLAG)
-    MPVLib.observeProperty("paused-for-cache", mpvFormat.MPV_FORMAT_FLAG)
-    MPVLib.observeProperty("core-idle", mpvFormat.MPV_FORMAT_FLAG)
-    MPVLib.observeProperty("pause", mpvFormat.MPV_FORMAT_FLAG)
-    MPVLib.observeProperty("time-pos", mpvFormat.MPV_FORMAT_INT64)
+    MPVLib.observeProperty("eof-reached", MpvFormat.MPV_FORMAT_FLAG)
+    MPVLib.observeProperty("paused-for-cache", MpvFormat.MPV_FORMAT_FLAG)
+    MPVLib.observeProperty("core-idle", MpvFormat.MPV_FORMAT_FLAG)
+    MPVLib.observeProperty("pause", MpvFormat.MPV_FORMAT_FLAG)
+    MPVLib.observeProperty("time-pos", MpvFormat.MPV_FORMAT_INT64)
   }
 
   /* Events */
@@ -187,18 +187,18 @@ class VideoMpvView(context: ThemedReactContext) :
 
   override fun event(eventId: Int) {
     when (eventId) {
-      mpvEventId.MPV_EVENT_FILE_LOADED -> onVideoLoaded()
-      mpvEventId.MPV_EVENT_START_FILE -> onVideoLoadStart()
+      MpvEvent.MPV_EVENT_FILE_LOADED -> onVideoLoaded()
+      MpvEvent.MPV_EVENT_START_FILE -> onVideoLoadStart()
     }
   }
 
   override fun eventFileEnd(reason: Int, error: String?) {
     Log.d(TAG, "Video End $reason")
-    if (reason != mpvEndFileReason.MPV_END_FILE_REASON_STOP &&
-                    reason != mpvEndFileReason.MPV_END_FILE_REASON_QUIT
+    if (reason != MpvEndFileReason.MPV_END_FILE_REASON_STOP &&
+                    reason != MpvEndFileReason.MPV_END_FILE_REASON_QUIT
     ) {
       cleanVariables()
-      if (reason == mpvEndFileReason.MPV_END_FILE_REASON_ERROR) {
+      if (reason == MpvEndFileReason.MPV_END_FILE_REASON_ERROR) {
         eventEmitter.onVideoError(error ?: "Unknown error", 1000)
       }
     }
