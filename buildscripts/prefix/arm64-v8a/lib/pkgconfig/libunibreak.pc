@@ -1,0 +1,11 @@
+libunibreak:
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libunibreak
+Description: Library to implement Unicode algorithms for line and word breaking
+Version: 6.1
+Libs: -L${libdir} -lunibreak
+Cflags: -I${includedir}

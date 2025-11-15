@@ -1,0 +1,9 @@
+prefix=/usr/local
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+Name: libdav1d
+Description: AV1 decoding library
+Version: 1.5.2
+Libs: -L${libdir} -ldav1d -pthread
+Cflags: -I${includedir} -pthread

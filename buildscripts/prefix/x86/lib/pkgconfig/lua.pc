@@ -1,0 +1,9 @@
+version=5.2.4
+prefix=/usr/local
+libdir=/usr/local/lib
+includedir=/usr/local/include
+Name: Lua
+Description:
+Version: ${version}
+Libs: -L${libdir} -llua
+Cflags: -I${includedir}

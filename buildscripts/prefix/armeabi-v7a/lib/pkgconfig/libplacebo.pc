@@ -1,0 +1,21 @@
+prefix=/usr/local
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+pl_has_d3d11=0
+pl_has_dovi=1
+pl_has_gl_proc_addr=1
+pl_has_glslang=0
+pl_has_lcms=0
+pl_has_libdovi=0
+pl_has_opengl=1
+pl_has_shaderc=0
+pl_has_vk_proc_addr=0
+pl_has_vulkan=0
+pl_has_xxhash=0
+
+Name: libplacebo
+Description: Reusable library for GPU-accelerated video/image rendering
+Version: 7.357.0
+Libs: -L${libdir} -lplacebo -lm -pthread -ldl -lc++
+Cflags: -I${includedir} -DPL_HAVE_PTHREAD -DPTHREAD_HAS_SETCLOCK -pthread -DPL_STATIC

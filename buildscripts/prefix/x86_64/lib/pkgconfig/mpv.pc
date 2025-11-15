@@ -1,0 +1,11 @@
+prefix=/usr/local
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+Name: mpv
+Description: mpv media player client library
+Version: 2.5.0
+Requires.private: libass >=  0.12.2, libavcodec >=  60.31.102, libavfilter >=  9.12.100, libavformat >=  60.16.100, libavutil >=  58.29.100, libplacebo >= 6.338.2, libswresample >=  4.12.100, libswscale >=  7.5.100, libavdevice >=  60.3.100, lua < 5.3.0, lua >= 5.1.0
+Libs: -L${libdir} -lmpv
+Libs.private: -latomic -pthread -landroid -lm -lz -lOpenSLES -lEGL
+Cflags: -I${includedir}

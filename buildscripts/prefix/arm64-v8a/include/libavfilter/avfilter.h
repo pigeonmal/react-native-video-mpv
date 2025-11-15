@@ -97,6 +97,18 @@ const char *avfilter_pad_get_name(const AVFilterPad *pads, int pad_idx);
 enum AVMediaType avfilter_pad_get_type(const AVFilterPad *pads, int pad_idx);
 
 /**
+ * Get the hardware frames context of a filter link.
+ *
+ * @param link an AVFilterLink
+ *
+ * @return a ref-counted copy of the link's hw_frames_ctx field if there is
+ *         a hardware frames context associated with the link or NULL otherwise.
+ *         The returned AVBufferRef needs to be released with av_buffer_unref()
+ *         when it is no longer used.
+ */
+AVBufferRef* avfilter_link_get_hw_frames_ctx(AVFilterLink *link);
+
+/**
  * Lists of formats / etc. supported by an end of a link.
  *
  * This structure is directly part of AVFilterLink, in two copies:
@@ -128,6 +140,11 @@ typedef struct AVFilterFormatsConfig {
      */
     AVFilterFormats *color_spaces;  ///< AVColorSpace
     AVFilterFormats *color_ranges;  ///< AVColorRange
+
+    /**
+     * List of supported alpha modes, only for video with an alpha channel.
+     */
+    AVFilterFormats *alpha_modes;  ///< AVAlphaMode
 
 } AVFilterFormatsConfig;
 
@@ -416,6 +433,8 @@ struct AVFilterLink {
     AVFrameSideData **side_data;
     int nb_side_data;
 
+    enum AVAlphaMode alpha_mode; ///< alpha mode (for videos with an alpha channel)
+
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavfilter and can be changed and
@@ -446,20 +465,6 @@ struct AVFilterLink {
  */
 int avfilter_link(AVFilterContext *src, unsigned srcpad,
                   AVFilterContext *dst, unsigned dstpad);
-
-#if FF_API_LINK_PUBLIC
-/**
- * @deprecated this function should never be called by users
- */
-attribute_deprecated
-void avfilter_link_free(AVFilterLink **link);
-
-/**
- * @deprecated this function should never be called by users
- */
-attribute_deprecated
-int avfilter_config_links(AVFilterContext *filter);
-#endif
 
 #define AVFILTER_CMD_FLAG_ONE   1 ///< Stop once a filter understood the command (for target=all for example), fast filters are favored automatically
 #define AVFILTER_CMD_FLAG_FAST  2 ///< Only execute command when its fast (like a video out that supports contrast adjustment in hw)
@@ -631,6 +636,14 @@ typedef struct AVFilterGraph {
     avfilter_execute_func *execute;
 
     char *aresample_swr_opts; ///< swr options to use for the auto-inserted aresample filters, Access ONLY through AVOptions
+
+    /**
+     * Sets the maximum number of buffered frames in the filtergraph combined.
+     *
+     * Zero means no limit. This field must be set before calling
+     * avfilter_graph_config().
+     */
+    unsigned max_buffered_frames;
 } AVFilterGraph;
 
 /**
@@ -892,7 +905,7 @@ typedef struct AVFilterParams {
     char                *instance_name;
 
     /**
-     * Options to be apllied to the filter.
+     * Options to be applied to the filter.
      *
      * Filled by avfilter_graph_segment_parse(). Afterwards may be freely
      * modified by the caller.
@@ -1075,7 +1088,7 @@ int avfilter_graph_segment_init(AVFilterGraphSegment *seg, int flags);
  * Unlabeled outputs are
  * - linked to the first unlinked unlabeled input in the next non-disabled
  *   filter in the chain, if one exists
- * - exported in the ouputs linked list otherwise, with NULL label
+ * - exported in the outputs linked list otherwise, with NULL label
  *
  * Similarly, unlinked input pads are exported in the inputs linked list.
  *

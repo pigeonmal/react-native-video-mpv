@@ -1,0 +1,10 @@
+prefix=/usr/local
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+Name: FreeType 2
+Description: A free, high-quality, and portable font engine.
+URL: https://freetype.org
+Version: 26.4.20
+Libs: -L${libdir} -lfreetype -lz -ldl
+Cflags: -I${includedir}/freetype2

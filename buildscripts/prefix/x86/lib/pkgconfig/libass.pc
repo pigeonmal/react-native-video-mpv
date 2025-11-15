@@ -1,0 +1,13 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libass
+Description: libass is an SSA/ASS subtitles rendering library
+Version: 0.17.4
+Requires: libunibreak >= 1.1, harfbuzz >= 1.2.3, fribidi >= 0.19.1, freetype2 >= 9.17.3
+Requires.private: 
+Libs: -L${libdir} -lass -lm 
+Libs.private: 
+Cflags: -I${includedir}

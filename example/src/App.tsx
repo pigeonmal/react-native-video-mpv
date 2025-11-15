@@ -74,6 +74,7 @@ export default function App() {
         ref={mpvRef}
         initialSource={testSource}
         style={styles.box}
+        onEndReached={() => mpvRef.current?.setSource(testSource2)}
         langsPref={{
           audio: 'fr',
           sub: 'fr',
