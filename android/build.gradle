@@ -1,30 +1,28 @@
 buildscript {
-    ext.getExtOrDefault = {name ->
-        return rootProject.ext.has(name) ? rootProject.ext.get(name) : project.properties['VideoMpv_' + name]
-    }
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath "com.android.tools.build:gradle:8.7.2"
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${getExtOrDefault('kotlinVersion')}"
-    }
+  ext.getExtOrDefault = {name ->
+    return rootProject.ext.has(name) ? rootProject.ext.get(name) : project.properties['VideoMpv_' + name]
+  }
+
+  repositories {
+    google()
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath "com.android.tools.build:gradle:8.7.2"
+    // noinspection DifferentKotlinGradleVersion
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${getExtOrDefault('kotlinVersion')}"
+  }
 }
 
-def isNewArchitectureEnabled() {
-    return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
-}
 
 apply plugin: "com.android.library"
 apply plugin: "kotlin-android"
 
-if (isNewArchitectureEnabled()) {
-    apply plugin: "com.facebook.react"
-}
+apply plugin: "com.facebook.react"
 
 def getExtOrIntegerDefault(name) {
-    return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["VideoMpv_" + name]).toInteger()
+  return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["VideoMpv_" + name]).toInteger()
 }
 
 def reactNativeArchitectures() {
@@ -33,35 +31,39 @@ def reactNativeArchitectures() {
 }
 
 android {
-    namespace "com.videompv"
-    compileSdkVersion getExtOrIntegerDefault("compileSdkVersion")
+  namespace "com.videompv"
 
-    defaultConfig {
-        minSdkVersion getExtOrIntegerDefault("minSdkVersion")
-        targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
-        buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
-        ndk {
-            abiFilters(*reactNativeArchitectures())
-        }
+  compileSdkVersion getExtOrIntegerDefault("compileSdkVersion")
+
+  defaultConfig {
+    minSdkVersion getExtOrIntegerDefault("minSdkVersion")
+    targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
+    ndk {
+      abiFilters(*reactNativeArchitectures())
     }
+  }
 
-    buildFeatures {
-        buildConfig true
+  buildFeatures {
+    buildConfig true
+  }
+
+  buildTypes {
+    release {
+      minifyEnabled false
     }
+  }
 
-    buildTypes {
-        release {
-            minifyEnabled false
-        }
-    }
+  lintOptions {
+    disable "GradleCompatible"
+  }
 
-    externalNativeBuild {
-        ndkBuild {
-            path "$projectDir/src/main/jni/Android.mk"
-        }
-    }
+  externalNativeBuild {
+    ndkBuild {
+      path "$projectDir/src/main/jni/Android.mk"
+     }
+  }
 
-    splits {
+  splits {
         abi {
             enable true
             reset()
@@ -75,41 +77,30 @@ android {
         }
     }
 
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
-    }
 
-    sourceSets {
-        main {
-            if (isNewArchitectureEnabled()) {
-                java.srcDirs += [
-                    "generated/java",
-                    "generated/jni"
-                ]
-            }
-        }
-    }
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
+  }
 
-   
+  sourceSets {
+    main {
+      java.srcDirs += [
+        "generated/java",
+        "generated/jni"
+      ]
+    }
+  }
 }
 
 repositories {
-    mavenCentral()
-    google()
+  mavenCentral()
+  google()
 }
 
 def kotlin_version = getExtOrDefault("kotlinVersion")
 
 dependencies {
-    implementation "com.facebook.react:react-android"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-}
-
-if (isNewArchitectureEnabled()) {
-    react {
-        jsRootDir = file("../src/")
-        libraryName = "VideoMpvView"
-        codegenJavaPackageName = "com.videompv"
-    }
+  implementation "com.facebook.react:react-android"
+  implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }

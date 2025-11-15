@@ -1,9 +1,9 @@
 #import "VideoMpvView.h"
 
-#import "generated/RNVideoMpvViewSpec/ComponentDescriptors.h"
-#import "generated/RNVideoMpvViewSpec/EventEmitters.h"
-#import "generated/RNVideoMpvViewSpec/Props.h"
-#import "generated/RNVideoMpvViewSpec/RCTComponentViewHelpers.h"
+#import <react/renderer/components/VideoMpvViewSpec/ComponentDescriptors.h>
+#import <react/renderer/components/VideoMpvViewSpec/EventEmitters.h>
+#import <react/renderer/components/VideoMpvViewSpec/Props.h>
+#import <react/renderer/components/VideoMpvViewSpec/RCTComponentViewHelpers.h>
 
 #import "RCTFabricComponentsPlugins.h"
 
