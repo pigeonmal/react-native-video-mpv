@@ -10,7 +10,10 @@ include $(PREBUILT_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_MODULE := libpostproc
 LOCAL_SRC_FILES := $(PREFIX)/lib/$(LOCAL_MODULE).so
+# only include if library file exists
+ifneq (,$(wildcard $(LOCAL_SRC_FILES)))
 include $(PREBUILT_SHARED_LIBRARY)
+endif
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := libavutil
@@ -63,6 +66,6 @@ LOCAL_SRC_FILES := \
 	event.cpp \
 	thumbnail.cpp
 LOCAL_LDLIBS    := -llog -lGLESv3 -lEGL -latomic
-LOCAL_SHARED_LIBRARIES := swscale avcodec mpv avdevice avfilter avformat avutil postproc swresample
+LOCAL_SHARED_LIBRARIES := swscale avcodec mpv avfilter avformat avutil swresample avdevice
 
 include $(BUILD_SHARED_LIBRARY)
