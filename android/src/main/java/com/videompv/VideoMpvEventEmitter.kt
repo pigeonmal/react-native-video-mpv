@@ -117,19 +117,18 @@ class VideoMpvEventEmitter {
         }
     }
 
-    private class EventBuilder(
-            private val surfaceId: Int,
-            private val viewId: Int,
-            private val dispatcher: EventDispatcher
-    ) {
+
+      private class VideoCustomEvent(surfaceId: Int, viewId: Int, private val event: EventTypes, private val paramsSetter: (WritableMap.() -> Unit)?) :
+        Event<VideoCustomEvent>(surfaceId, viewId) {
+
+        override fun getEventName(): String = "top${event.eventName.removePrefix("on")}"
+
+        override fun getEventData(): WritableMap? = Arguments.createMap().apply(paramsSetter ?: {})
+    }
+
+    private class EventBuilder(private val surfaceId: Int, private val viewId: Int, private val dispatcher: EventDispatcher) {
         fun dispatch(event: EventTypes, paramsSetter: (WritableMap.() -> Unit)? = null) =
-                dispatcher.dispatchEvent(
-                        object : Event<Event<*>>(surfaceId, viewId) {
-                            override fun getEventName() = "top${event.eventName.removePrefix("on")}"
-                            override fun getEventData() =
-                                    Arguments.createMap().apply(paramsSetter ?: {})
-                        }
-                )
+            dispatcher.dispatchEvent(VideoCustomEvent(surfaceId, viewId, event, paramsSetter))
     }
 
     private fun WritableMap.applyTrackProperties(format: BasicTrack) {
