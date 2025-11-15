@@ -93,30 +93,14 @@ class VideoMpvViewManager :
     videoView.setSubStyle(SubtitleStyle.parse(subStyle))
   }
 
-  override fun receiveCommand(videoView: VideoMpvView, commandId: String, args: ReadableArray?) {
-    super.receiveCommand(videoView, commandId, args)
-    when (commandId) {
-      COMMAND_SEEK_NAME -> {
-        val seekTo = safeGetDoubleFromArray(args, 0, null)
-        if (seekTo != null) {
-          videoView.seek(seekTo)
-        }
-      }
-      COMMAND_SET_PROP_STRING -> {
-        val propName = safeGetStringFromArray(args, 0, null)
-        val propValue = safeGetStringFromArray(args, 1, null)
-        if (propName != null && propValue != null) {
-          videoView.setPlayerPropertyString(propName, propValue)
-        }
-      }
-      COMMAND_SET_PROP_INT -> {
-        val propName = safeGetStringFromArray(args, 0, null)
-        val propValue = safeGetIntFromArray(args, 1, null)
-        if (propName != null && propValue != null) {
-          videoView.setPlayerPropertyInt(propName, propValue)
-        }
-      }
-    }
+  override fun seek(videoView: VideoMpvView, time: Double) {
+    videoView.seek(time)
+  }
+  override fun setPropString(videoView: VideoMpvView, propName: String, propValue: String) {
+    videoView.setPlayerPropertyString(propName, propValue)
+  }
+  override fun setPropInt(videoView: VideoMpvView, propName: String, propValue: Int) {
+    videoView.setPlayerPropertyInt(propName, propValue)
   }
 
   companion object {
@@ -131,9 +115,5 @@ class VideoMpvViewManager :
     private const val PROP_TEXT_TRACK_DELAY = "textTrackDelay"
     private const val PROP_LANGS_PREF = "langsPref"
     private const val PROP_SUB_STYLE = "subStyle"
-
-    private const val COMMAND_SEEK_NAME = "seek"
-    private const val COMMAND_SET_PROP_STRING = "setPropString"
-    private const val COMMAND_SET_PROP_INT = "setPropInt"
   }
 }

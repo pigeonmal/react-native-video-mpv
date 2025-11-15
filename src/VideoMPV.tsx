@@ -8,10 +8,9 @@ import {
 } from 'react';
 import {
   generateHeaderForNative,
-  getReactTag,
   resolveAssetSourceForVideo,
 } from './utils/utils';
-import { UIManager, View, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import type { NativeSyntheticEvent } from 'react-native';
 import type { ReactVideoMPVProps, ReactVideoMPVSource } from './types/video';
 import type {
@@ -24,7 +23,9 @@ import type {
   VideoSrc,
 } from './VideoMpvViewNativeComponent';
 import type { VideoMPVRef } from './types/video-ref';
-import VideoMpvViewNativeComponent from './VideoMpvViewNativeComponent';
+import VideoMpvViewNativeComponent, {
+  Commands,
+} from './VideoMpvViewNativeComponent';
 
 const getNativeSource = (
   source?: ReactVideoMPVSource
@@ -121,39 +122,31 @@ const VideoMPV = forwardRef<VideoMPVRef, ReactVideoMPVProps>(
       [onPlaybackStateChanged]
     );
 
-    const sendCommand = useCallback((command: string, args: any[]) => {
-      UIManager.dispatchViewManagerCommand(
-        getReactTag(nativeRef),
-        command,
-        args
-      );
+    const seek = useCallback((time: number) => {
+      if (time == null || isNaN(time)) {
+        throw new Error('Invalid time');
+      }
+      if (!nativeRef.current) {
+        throw new Error('Ref is null');
+      }
+      let wantedTime = time;
+      if (wantedTime < 0) wantedTime = 0;
+      Commands.seek(nativeRef.current, wantedTime);
     }, []);
 
-    const seek = useCallback(
-      (time: number) => {
-        if (time == null || isNaN(time)) {
-          throw new Error('Invalid time');
-        }
-        let wantedTime = time;
-        if (wantedTime < 0) wantedTime = 0;
-        sendCommand('seek', [wantedTime]);
-      },
-      [sendCommand]
-    );
+    const setStringOption = useCallback((option: string, value: string) => {
+      if (!nativeRef.current) {
+        throw new Error('Ref is null');
+      }
+      Commands.setPropString(nativeRef.current, option, value);
+    }, []);
 
-    const setStringOption = useCallback(
-      (option: string, value: string) => {
-        sendCommand('setPropString', [option, value]);
-      },
-      [sendCommand]
-    );
-
-    const setIntOption = useCallback(
-      (option: string, value: number) => {
-        sendCommand('setPropInt', [option, value]);
-      },
-      [sendCommand]
-    );
+    const setIntOption = useCallback((option: string, value: number) => {
+      if (!nativeRef.current) {
+        throw new Error('Ref is null');
+      }
+      Commands.setPropInt(nativeRef.current, option, value);
+    }, []);
 
     const setSource = useCallback((source?: ReactVideoMPVSource) => {
       setNativeSource(getNativeSource(source));

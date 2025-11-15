@@ -1,9 +1,8 @@
-import type { Component, ComponentClass, RefObject } from 'react';
 import type {
   ReactVideoMPVSource,
   ReactVideoMPVsourceProperties,
 } from '../types/video';
-import { Image, findNodeHandle } from 'react-native';
+import { Image } from 'react-native';
 
 type Source = ReactVideoMPVSource;
 
@@ -44,26 +43,4 @@ export function generateHeaderForNative(obj?: Record<string, any>) {
     return [];
   }
   return Object.entries(obj).map(([key, value]) => ({ key, value }));
-}
-
-export function getReactTag(
-  ref: RefObject<
-    | Component<unknown, unknown, unknown>
-    | ComponentClass<unknown, unknown>
-    | null
-  >
-): number {
-  if (!ref.current) {
-    throw new Error('VideoMPV Component is not mounted');
-  }
-
-  const reactTag = findNodeHandle(ref.current);
-
-  if (!reactTag) {
-    throw new Error(
-      'Cannot find reactTag for VideoMPV Component in components tree'
-    );
-  }
-
-  return reactTag;
 }

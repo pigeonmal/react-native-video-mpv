@@ -2,10 +2,12 @@ import type { HostComponent, ViewProps } from 'react-native';
 import codegenNativeComponent from 'react-native/Libraries/Utilities/codegenNativeComponent';
 import type {
   DirectEventHandler,
+  Double,
   Float,
   Int32,
   WithDefault,
 } from 'react-native/Libraries/Types/CodegenTypes';
+import codegenNativeCommands from 'react-native/Libraries/Utilities/codegenNativeCommands';
 
 type Headers = ReadonlyArray<
   Readonly<{
@@ -122,3 +124,24 @@ interface NativeProps extends ViewProps {
 export default codegenNativeComponent<NativeProps>(
   'VideoMpvView'
 ) as HostComponent<NativeProps>;
+
+interface NativeCommands {
+  seek: (
+    viewRef: React.ElementRef<HostComponent<NativeProps>>,
+    time: Double
+  ) => void;
+  setPropString: (
+    viewRef: React.ElementRef<HostComponent<NativeProps>>,
+    propName: string,
+    propValue: string
+  ) => void;
+  setPropInt: (
+    viewRef: React.ElementRef<HostComponent<NativeProps>>,
+    propName: string,
+    propValue: Int32
+  ) => void;
+}
+
+export const Commands: NativeCommands = codegenNativeCommands<NativeCommands>({
+  supportedCommands: ['seek', 'setPropString', 'setPropInt'],
+});
